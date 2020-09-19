@@ -5,17 +5,15 @@ volumes:
 
 
 services:
-#  backend:
-#    build:
-#      context: ./backend
-#    depends_on:
-#      - postgres
-#    volumes:
-#      - ./backend:/app
-#    command: /gunicorn.sh
-#    entrypoint: /entrypoint.sh
-#    restart: on-failure
-#    env_file: .env
+  backend:
+    build:
+      context: ./backend
+    depends_on:
+      - postgres
+    volumes:
+      - ./backend:/app
+    restart: on-failure
+    env_file: .env
 
   postgres:
     image: postgres:10-alpine
@@ -28,10 +26,10 @@ services:
       context: .
       dockerfile: nginx/Dockerfile
     ports:
-      - "8000:80"
+      - "80:80"
       - "443:443"
-#    depends_on:
-#      - backend
+    depends_on:
+      - backend
     volumes:
       - ./backend/media/:/media/
       - ./backend/staticfiles/:/staticfiles/
@@ -40,8 +38,11 @@ services:
   backups:
     image: prodrigestivill/postgres-backup-local
     restart: on-failure
-#    depends_on:
-#      - postgres
+    depends_on:
+      - postgres
     volumes:
       - /tmp/backups/:/backups/
+
+  certbot:
+    image: certbot/certbot
 

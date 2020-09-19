@@ -4,17 +4,15 @@ volumes:
     chaosnetleaders_data: {}
 
 services:
-#  backend:
-#    build:
-#      context: ./backend
-#    depends_on:
-#      - postgres
-#    volumes:
-#      - ./backend:/app
-#    command: /start.sh
-#    entrypoint: /entrypoint.sh
-#    restart: on-failure
-#    env_file: .env
+  backend:
+    build:
+      context: ./backend
+    depends_on:
+      - postgres
+    volumes:
+      - ./backend:/app
+    restart: on-failure
+    env_file: .env
 
   frontend:
     image: node:10-alpine
@@ -35,11 +33,14 @@ services:
     image: nginx:alpine
     ports:
       - "8000:80"
-#    depends_on:
-#      - backend
+    depends_on:
+      - backend
     volumes:
       - ./backend/media/:/media/
       - ./backend/staticfiles/:/staticfiles/
       - ./nginx/dev.conf:/etc/nginx/nginx.conf:ro
     logging:
       driver: none
+
+  certbot:
+    image: certbot/certbot

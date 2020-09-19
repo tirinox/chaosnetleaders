@@ -3,11 +3,11 @@ export
 
 build:
 	$(info Make: Building images.)
-	docker-compose -f "${DOCKER_COMPOSE_FILE}" build --no-cache backend
+	docker-compose -f "${DOCKER_COMPOSE_FILE}" build --no-cache backend nginx
 
 start:
 	$(info Make: Starting containers.)
-	docker-compose -f "${DOCKER_COMPOSE_FILE}" up -d
+	docker-compose -f "${DOCKER_COMPOSE_FILE}" up -d nginx
 	docker ps
 
 stop:

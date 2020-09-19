@@ -8,18 +8,20 @@ services:
   backend:
     build:
       context: ./backend
-    depends_on:
-      - postgres
+#    depends_on:
+#      - postgres
+    ports:
+      - 5000:5000
     volumes:
       - ./backend:/app
     restart: on-failure
     env_file: .env
 
-  postgres:
-    image: postgres:10-alpine
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    env_file: .env
+#  postgres:
+#    image: postgres:10-alpine
+#    volumes:
+#      - postgres_data:/var/lib/postgresql/data
+#    env_file: .env
 
   nginx:
     build:
@@ -32,17 +34,15 @@ services:
     depends_on:
       - backend
     volumes:
-      - ./backend/media/:/media/
-      - ./backend/staticfiles/:/staticfiles/
       - ./nginx/prod.conf:/etc/nginx/nginx.conf:ro
 
-  backups:
-    image: prodrigestivill/postgres-backup-local
-    restart: on-failure
-    depends_on:
-      - postgres
-    volumes:
-      - /tmp/backups/:/backups/
+#  backups:
+#    image: prodrigestivill/postgres-backup-local
+#    restart: on-failure
+#    depends_on:
+#      - postgres
+#    volumes:
+#      - /tmp/backups/:/backups/
 
   certbot:
     image: certbot/certbot

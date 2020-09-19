@@ -1,1 +1,1 @@
-Dont forget to set backend as source root.
+Dont forget to set backend/src/ as source root.

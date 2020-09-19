@@ -4,17 +4,17 @@ volumes:
     chaosnetleaders_data: {}
 
 services:
-  backend:
-    build:
-      context: ./backend
-    depends_on:
-      - postgres
-    volumes:
-      - ./backend:/app
-    command: /start.sh
-    entrypoint: /entrypoint.sh
-    restart: on-failure
-    env_file: .env
+#  backend:
+#    build:
+#      context: ./backend
+#    depends_on:
+#      - postgres
+#    volumes:
+#      - ./backend:/app
+#    command: /start.sh
+#    entrypoint: /entrypoint.sh
+#    restart: on-failure
+#    env_file: .env
 
   frontend:
     image: node:10-alpine

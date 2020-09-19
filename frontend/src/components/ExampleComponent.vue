@@ -1,10 +1,6 @@
 <template>
   <div class="container">
-    <h1>Cookiecutter Django Vue</h1>
-    <p align="center">
-      <img src="https://i.imgur.com/SA8cjs8.png">
-      <p>help me</p>
-    </p>
+    <h1>Hello wordl</h1>
   </div>
 </template>
 

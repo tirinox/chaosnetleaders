@@ -8,7 +8,7 @@ RUN npm install
 RUN npm audit fix
 
 COPY frontend /app/
-COPY ../.env /app/.env
+#COPY .env /app/.env
 RUN npm run build
 
 # Stage 2 - nginx & frontend dist

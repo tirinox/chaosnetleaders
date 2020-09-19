@@ -35,8 +35,8 @@ services:
     image: nginx:alpine
     ports:
       - "8000:80"
-    depends_on:
-      - backend
+#    depends_on:
+#      - backend
     volumes:
       - ./backend/media/:/media/
       - ./backend/staticfiles/:/staticfiles/

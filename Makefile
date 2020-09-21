@@ -7,7 +7,7 @@ build:
 
 start:
 	$(info Make: Starting containers.)
-	docker-compose -f "${DOCKER_COMPOSE_FILE}" up -d nginx
+	docker-compose -f "${DOCKER_COMPOSE_FILE}" up -d
 	docker ps
 
 stop:

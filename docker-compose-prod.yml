@@ -37,7 +37,7 @@ services:
     volumes:
       - ./backend/media/:/media/
       - ./backend/staticfiles/:/staticfiles/
-      - ./nginx/dev.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/prod.conf:/etc/nginx/nginx.conf:ro
       - ./data/certbot/conf:/etc/letsencrypt
       - ./data/certbot/www:/var/www/certbot
 #    logging:

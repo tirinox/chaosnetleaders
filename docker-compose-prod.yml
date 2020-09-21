@@ -5,6 +5,13 @@ volumes:
 
 
 services:
+
+  #  postgres:
+  #    image: postgres:10-alpine
+  #    volumes:
+  #      - postgres_data:/var/lib/postgresql/data
+  #    env_file: .env
+
   backend:
     build:
       context: ./backend
@@ -17,33 +24,31 @@ services:
     restart: on-failure
     env_file: .env
 
-#  postgres:
-#    image: postgres:10-alpine
-#    volumes:
-#      - postgres_data:/var/lib/postgresql/data
-#    env_file: .env
-
   nginx:
     build:
       context: .
       dockerfile: nginx/Dockerfile
+    image: nginx:alpine
     ports:
       - "80:80"
       - "443:443"
-    restart: always
     depends_on:
       - backend
     volumes:
-      - ./nginx/prod.conf:/etc/nginx/nginx.conf:ro
-
-#  backups:
-#    image: prodrigestivill/postgres-backup-local
-#    restart: on-failure
-#    depends_on:
-#      - postgres
-#    volumes:
-#      - /tmp/backups/:/backups/
+      - ./backend/media/:/media/
+      - ./backend/staticfiles/:/staticfiles/
+      - ./nginx/dev.conf:/etc/nginx/nginx.conf:ro
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
+    logging:
+      driver: none
+    # make sure nginx restarts every 6h
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
 
   certbot:
     image: certbot/certbot
+    volumes:
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 

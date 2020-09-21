@@ -1,7 +1,8 @@
 version: '3.3'
 
 volumes:
-    postgres_data: {}
+    db_data: {}
+
 
 
 services:
@@ -15,13 +16,20 @@ services:
   backend:
     build:
       context: ./backend
-#    depends_on:
-#      - postgres
+    depends_on:
+      - db
     ports:
       - 5000:5000
     volumes:
       - ./backend:/app
     restart: on-failure
+    env_file: .env
+
+  db:
+    image: mysql:5.7
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: always
     env_file: .env
 
   nginx:

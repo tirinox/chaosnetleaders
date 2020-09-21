@@ -1,6 +1,7 @@
 # app
 .env
 config.yaml
+db_data
 
 
 ### OSX ###

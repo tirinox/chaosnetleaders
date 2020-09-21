@@ -40,8 +40,8 @@ services:
       - ./nginx/dev.conf:/etc/nginx/nginx.conf:ro
       - ./data/certbot/conf:/etc/letsencrypt
       - ./data/certbot/www:/var/www/certbot
-    logging:
-      driver: none
+#    logging:
+#      driver: none
     # make sure nginx restarts every 6h
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
 

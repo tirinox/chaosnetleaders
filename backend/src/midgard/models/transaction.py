@@ -18,6 +18,7 @@ class BEPTransaction(IdModel):
     output_address = fields.CharField(255, index=True)
     output_asset = fields.CharField(50, index=True)
     output_amount = fields.FloatField()
+    order_of_come = fields.IntField()
 
     hash = fields.CharField(255, unique=True)
 
@@ -25,7 +26,7 @@ class BEPTransaction(IdModel):
         return f"{self.type}({self.input_amount} {self.input_asset} -> {self.output_amount} {self.output_asset})"
 
     @classmethod
-    def from_json(cls, tx):
+    def from_json(cls, tx, order_of_come=0):
         try:
             t = tx['type']
             s = tx['status']
@@ -40,7 +41,7 @@ class BEPTransaction(IdModel):
 
                     tx_hash = f"{in_data['txID']}_{out_data['txID']}"
 
-                    return cls(type="swap",
+                    return cls(type=t,
                                date=int(tx['date']),
                                pool=tx['pool'],
                                input_address=in_data['address'],
@@ -49,7 +50,8 @@ class BEPTransaction(IdModel):
                                output_address=out_data['address'],
                                output_asset=out_coin['asset'],
                                output_amount=out_amount,
-                               hash=tx_hash)
+                               hash=tx_hash,
+                               order_of_come=order_of_come)
         except (LookupError, ValueError) as e:
             logging.error(f"failed to parse transaction JSON; exeption: {e}")
             return None

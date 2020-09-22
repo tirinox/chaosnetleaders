@@ -1,9 +1,16 @@
 import asyncio
 from dotenv import load_dotenv
 import os
+import logging
 
 from tortoise import Tortoise, fields, run_async
-from midgard.models.transaction import Trasnaction
+from tortoise.functions import Sum, Count
+
+from midgard.fetcher import foo_test
+from midgard.models.transaction import BEPTransaction
+
+
+logging.basicConfig(level=logging.INFO)
 
 
 async def amain():
@@ -19,10 +26,11 @@ async def amain():
     })
     await Tortoise.generate_schemas()
 
-    event = await Trasnaction.create(name="34309091ab38031")
-    # await Trasnaction.filter(id=event.id).update(name="Updated name")
+    await foo_test()
 
-    print(await Trasnaction.filter(name="34309091ab38031").first())
+    # ret = (await BEPTransaction.annotate())
+
+
 
 
 if __name__ == '__main__':

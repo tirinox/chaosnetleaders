@@ -6,6 +6,7 @@ from midgard.models.base import IdModel
 
 
 class BEPTransaction(IdModel):
+    RUNE_SYMBOL = 'BNB.RUNE-B1A'
     DIVIDER = 100_000.0
 
     type = fields.CharField(20)
@@ -23,7 +24,7 @@ class BEPTransaction(IdModel):
     hash = fields.CharField(255, unique=True)
 
     def __str__(self):
-        return f"{self.type}({self.input_amount} {self.input_asset} -> {self.output_amount} {self.output_asset})"
+        return f"{self.type}(#{self.id}: {self.input_amount} {self.input_asset} -> {self.output_amount} {self.output_asset})"
 
     @classmethod
     def from_json(cls, tx, order_of_come=0):
@@ -66,3 +67,19 @@ class BEPTransaction(IdModel):
                 return False
         except exceptions.IntegrityError:
             return False
+
+    def get_price_rune(self):
+        if self.input_asset == self.RUNE_SYMBOL:
+            return self.input_amount / self.output_amount
+        elif self.output_asset == self.RUNE_SYMBOL:
+            return self.output_amount / self.input_amount
+
+    @classmethod
+    async def get_best_rune_price(cls, pool, date):
+        transaction1 = await cls.filter(date__gte=date, pool=pool, type='swap').order_by("date").first()
+        transaction2 = await cls.filter(date__lte=date, pool=pool, type='swap').order_by("-date").first()
+
+        prices = [tx.get_price_rune() for tx in (transaction1, transaction2) if tx is not None]
+        if prices:
+            avg_price = sum(prices) / len(prices)
+            return avg_price

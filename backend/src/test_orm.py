@@ -32,17 +32,19 @@ async def amain():
 
     # await fetch_all_absent_transactions()
 
-    # r = await BEPTransaction.filter(date__gte=START_TIMESTAMP).group_by('input_address')
-    # print(r)
 
-    la = LeaderAggregator()
+    # la = LeaderAggregator()
+    #
+    # txs = await BEPTransaction.all()
+    #
+    # for tx in txs:
+    #     await la.add_transaction(tx)
+    #
+    # await la.save_all()
 
-    txs = await BEPTransaction.all()
-
-    for tx in txs:
-        await la.add_transaction(tx)
-
-    await la.save_all()
+    p = await BEPTransaction.get_best_rune_price('BNB.BUSD-BD1', 1600799725)
+    p = 1.0 / p
+    print(p)
 
 
 if __name__ == '__main__':

@@ -3,17 +3,15 @@ from midgard.models.leader import BEPLeader
 
 
 class LeaderAggregator:
-    RUNE_SYMBOL = 'BNB.RUNE-B1A'
-
     def __init__(self):
         self.leader_cache = {}
 
     async def add_transaction(self, tr: BEPTransaction):
         address = tr.input_address
-        simple_swap = self.RUNE_SYMBOL in (tr.input_asset, tr.output_asset)
-        asset = self.RUNE_SYMBOL if simple_swap else tr.input_asset
+        simple_swap = tr.RUNE_SYMBOL in (tr.input_asset, tr.output_asset)
+        asset = tr.RUNE_SYMBOL if simple_swap else tr.input_asset
         if simple_swap:
-            amount = tr.input_amount if tr.input_asset == self.RUNE_SYMBOL else tr.output_amount
+            amount = tr.input_amount if tr.input_asset == tr.RUNE_SYMBOL else tr.output_amount
         else:
             amount = tr.input_amount
 

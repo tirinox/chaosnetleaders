@@ -4,7 +4,7 @@ from midgard.models.transaction import BEPTransaction
 
 
 URL_SWAP_GEN = lambda off, n: f"https://chaosnet-midgard.bepswap.com/v1/txs?offset={off}&limit={n}&type=swap,doubleSwap"
-BATCH = 30
+BATCH = 50
 
 
 class Fetcher:
@@ -58,9 +58,15 @@ async def fetch_all_absent_transactions():
 
             new_transactions += saved_transactions
 
+            local_count = await BEPTransaction.all().count()
+
             if not any_new:
-                logging.info('no new transactions; break fetching loop')
-                break
+                if local_count < count:
+                    logging.warning(f'no new transactions; but local count ({local_count}) is less '
+                                    f'than in the midgard api ({count})! continuing...')
+                else:
+                    logging.info('no new transactions; break fetching loop')
+                    break
             else:
                 logging.info(f'added {len(transactions)} transactions {i} of {count}')
             i += fetcher.batch_size

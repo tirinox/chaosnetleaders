@@ -1,9 +1,13 @@
 include .env
 export
 
-build:
+buildf:
 	$(info Make: Building images.)
-	docker-compose -f "${DOCKER_COMPOSE_FILE}" build --no-cache backend nginx
+	docker-compose -f "${DOCKER_COMPOSE_FILE}" build --no-cache nginx
+
+buildb:
+	$(info Make: Building images.)
+	docker-compose -f "${DOCKER_COMPOSE_FILE}" build --no-cache backend
 
 start:
 	$(info Make: Starting containers.)

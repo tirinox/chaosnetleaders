@@ -1,43 +1,47 @@
+from tortoise.functions import Sum
+
 from midgard.models.transaction import BEPTransaction
-from midgard.models.leader import BEPLeader
+
+import logging
 
 
-class LeaderAggregator:
-    def __init__(self):
-        self.leader_cache = {}
+BATCH = 100
 
-    async def add_transaction(self, tr: BEPTransaction):
-        address = tr.input_address
-        simple_swap = tr.RUNE_SYMBOL in (tr.input_asset, tr.output_asset)
-        asset = tr.RUNE_SYMBOL if simple_swap else tr.input_asset
-        if simple_swap:
-            amount = tr.input_amount if tr.input_asset == tr.RUNE_SYMBOL else tr.output_amount
-        else:
-            amount = tr.input_amount
 
-        key = f"{tr.input_address}.{asset}"
-        record: BEPLeader = self.leader_cache.get(key)
-        if not record:
-            record = await BEPLeader.filter(asset=asset, address=address).first()
+async def fill_rune_volumes():
+    number = 0
+    while True:
+        txs = await BEPTransaction.without_volume().limit(100)
+        if not txs:
+            break
 
-        if not record:
-            record = await BEPLeader.create(asset=asset,
-                                            address=address,
-                                            amount=amount,
-                                            order_of_come=tr.order_of_come,
-                                            date=tr.date,
-                                            last_tx_id=tr.id)
+        for tx in txs:
+            await tx.fill_rune_volume()
+            # print(f'{tx} : rune volume = {tx.rune_volume}')
 
-        self.leader_cache[key] = record
+        number += len(txs)
 
-        if tr.date < record.date:
-            return
-        if tr.date == record.date:
-            if tr.order_of_come <= record.order_of_come:
-                return
+    logging.info(f"fill_rune_volumes = {number} items filled")
+    return number
 
-        record.amount += amount
 
-    async def save_all(self):
-        for leader in self.leader_cache.values():
-            await leader.save()
+async def leaderboard(from_date, limit=10):
+    # select input_address, sum(rune_volume) as total_volume
+    # from beptransaction
+    # where date > 1599739200
+    # group by input_address order by total_volume desc;
+    results = await BEPTransaction\
+        .annotate(total_volume=Sum('rune_volume'))\
+        .filter(date__gte=from_date)\
+        .group_by('input_address')\
+        .order_by('-total_volume') \
+        .limit(limit)\
+        .values('total_volume', 'input_address', 'date')
+
+    return results
+
+
+async def dbg_print_leaderboard():
+    results = await leaderboard(0)
+    for place, result in enumerate(results, start=1):
+        print(f"#{place}: {result}")

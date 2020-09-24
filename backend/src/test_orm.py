@@ -1,19 +1,14 @@
 import asyncio
-from dotenv import load_dotenv
-import os
 import logging
+import os
 
-from tortoise import Tortoise, fields, run_async
-from tortoise.functions import Sum, Count
+from dotenv import load_dotenv
+from tortoise import Tortoise
 
-from midgard.fetcher import fetch_all_absent_transactions
-from midgard.models.transaction import BEPTransaction
-from midgard.aggregator import LeaderAggregator
-
-START_TIMESTAMP = 1599739200  # 12pm UTC, Thursday 10th September 2020
+from midgard.fetcher import run_fetcher
 
 
-logging.basicConfig(level=logging.INFO)
+
 
 
 async def amain():
@@ -25,26 +20,17 @@ async def amain():
     await Tortoise.init(db_url=f"mysql://{user}:{password}@{host}/{base}", modules={
         "models": [
             "midgard.models.transaction",
-            "midgard.models.leader",
         ]
     })
     await Tortoise.generate_schemas()
 
-    # await fetch_all_absent_transactions()
+    # await get_more_transactions()
+    # await fill_rune_volumes()
 
+    await run_fetcher()
 
-    # la = LeaderAggregator()
-    #
-    # txs = await BEPTransaction.all()
-    #
-    # for tx in txs:
-    #     await la.add_transaction(tx)
-    #
-    # await la.save_all()
-
-    p = await BEPTransaction.get_best_rune_price('BNB.BUSD-BD1', 1600799725)
-    p = 1.0 / p
-    print(p)
+    while True:
+        await asyncio.sleep(5.0)
 
 
 if __name__ == '__main__':

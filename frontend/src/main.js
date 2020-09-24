@@ -19,10 +19,10 @@ Vue.config.productionTip = false
 
 
 // Sentry for logging frontend errors
-Vue.use(VueRaven, {
-  dsn: process.env.VUE_APP_SENTRY_PUBLIC_DSN,
-  disableReport: process.env.NODE_ENV === 'development'
-})
+// Vue.use(VueRaven, {
+//   dsn: process.env.VUE_APP_SENTRY_PUBLIC_DSN,
+//   disableReport: process.env.NODE_ENV === 'development'
+// })
 
 
 
@@ -32,6 +32,6 @@ Vue.use(VueRaven, {
 new Vue({
   router,
   store,
-  
+
   render: h => h(App)
 }).$mount('#app')

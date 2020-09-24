@@ -18,3 +18,5 @@ FROM staticfloat/nginx-certbot
 COPY --from=build-deps /app/dist/ /dist/
 
 # CMD ["nginx", "-g", "daemon off;"]
+ENTRYPOINT []
+CMD ["/bin/bash", "/scripts/entrypoint.sh"]

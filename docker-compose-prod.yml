@@ -18,7 +18,7 @@ services:
     env_file: .env
 
   db:
-    image: mysql
+    image: mysql:latest
     volumes:
       - ./db_data:/var/lib/mysql
     restart: always

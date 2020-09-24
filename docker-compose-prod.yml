@@ -24,9 +24,7 @@ services:
     env_file: .env
 
   nginx:
-    build:
-      context: .
-      dockerfile: nginx/Dockerfile
+    image: nginx:alpine
     restart: unless-stopped
     ports:
       - "80:80"
@@ -38,6 +36,7 @@ services:
       - ./backend/staticfiles/:/staticfiles/
       - ./nginx/prod.conf:/etc/nginx/nginx.conf:ro
       - ./letsencrypt:/etc/letsencrypt
+      - ./frontend/dist/:/dist/
     environment:
       CERTBOT_EMAIL: myemail@tirinox.ru
 #    logging:

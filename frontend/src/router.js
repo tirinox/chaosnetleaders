@@ -1,10 +1,10 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 
-import ExampleComponent from '@/components/ExampleComponent.vue'
+import Leadboard from '@/components/Leaderboard.vue'
 
 const routes = [
-  { path: '*', component: ExampleComponent }
+  { path: '*', component: Leadboard }
 ]
 
 Vue.use(VueRouter)

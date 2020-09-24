@@ -9,6 +9,8 @@ axios.defaults.xsrfHeaderName = 'X-CSRFToken'
 import App from '@/App.vue'
 import './registerServiceWorker'
 
+window.axios = require('axios')
+
 Vue.config.productionTip = false
 
 new Vue({

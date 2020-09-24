@@ -24,7 +24,7 @@ async def hello(request):
 
 
 async def init_db(*_):
-    host = 'localhost'
+    host = os.environ.get('MYSQL_HOST', 'localhost')
     user = os.environ['MYSQL_USER']
     password = os.environ['MYSQL_PASSWORD']
     base = os.environ['MYSQL_DATABASE']
@@ -41,7 +41,7 @@ if __name__ == '__main__':
     load_dotenv('../../.env')
 
     app = web.Application(middlewares=[])
-    app.add_routes([web.get('/', hello)])
+    app.add_routes([web.get('/api/v1/leaderboard', hello)])
     app.on_startup.append(init_db)
     app.on_startup.append(run_fetcher)
 

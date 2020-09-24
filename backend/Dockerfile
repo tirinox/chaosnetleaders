@@ -4,12 +4,14 @@ FROM python:3.8.1-slim-buster
 # set the working directory in the container
 WORKDIR /app
 
-# copy the dependencies file to the working directory
-COPY requirements.txt .
 
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
-ENV FLASK_APP src/main.py
+ENV PYTHONPATH=/app/src
+
+# copy the dependencies file to the working directory
+COPY requirements.txt .
+
 
 # install dependencies
 RUN pip install -r requirements.txt
@@ -20,4 +22,4 @@ RUN pip install -r requirements.txt
 EXPOSE 5000
 
 # command to run on container start
-CMD [ "python", "src/manage.py", "run", "-h", "0.0.0.0" ]
+CMD [ "python", "/app/src/main.py" ]

@@ -15,6 +15,7 @@ logging.basicConfig(level=logging.INFO)
 
 START_TIMESTAMP = 1599739200  # 12pm UTC, Thursday 10th September 2020
 BOARD_LIMIT = 100
+PORT = 5000
 
 
 async def hello(request):
@@ -36,7 +37,6 @@ async def init_db(*_):
     await Tortoise.generate_schemas()
 
 
-
 if __name__ == '__main__':
     load_dotenv('../../.env')
 
@@ -45,4 +45,4 @@ if __name__ == '__main__':
     app.on_startup.append(init_db)
     app.on_startup.append(run_fetcher)
 
-    web.run_app(app)
+    web.run_app(app, port=PORT)

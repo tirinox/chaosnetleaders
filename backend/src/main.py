@@ -19,8 +19,15 @@ PORT = 5000
 
 
 async def hello(request):
-    obj = await leaderboard(START_TIMESTAMP, BOARD_LIMIT)
-    return web.json_response(obj)
+    timestamp = int(request.rel_url.query.get('since') or START_TIMESTAMP)
+    limit = int(request.rel_url.query.get('limit') or BOARD_LIMIT)
+
+    lb = await leaderboard(timestamp, limit)
+    return web.json_response({
+        'leaderboard': lb,
+        'since': timestamp,
+        'limit': limit
+    })
 
 
 async def init_db(*_):

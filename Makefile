@@ -2,8 +2,9 @@ include .env
 export
 
 buildf:
-	$(info Make: Building images.)
-	docker-compose -f "${DOCKER_COMPOSE_FILE}" build --no-cache nginx
+	$(info Make: Building frontend.)
+	cd frontend && npm run build
+	docker-compose -f "${DOCKER_COMPOSE_FILE}" restart nginx
 
 buildb:
 	$(info Make: Building images.)

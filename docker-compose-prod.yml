@@ -9,8 +9,6 @@ services:
       context: ./backend
     depends_on:
       - db
-    ports:
-      - 5000:5000
     volumes:
       - ./backend:/app
       - .env/:/app/.env
@@ -18,7 +16,7 @@ services:
     env_file: .env
 
   db:
-    image: mysql:latest
+    image: mysql:5.7
     volumes:
       - ./db_data:/var/lib/mysql
     restart: always

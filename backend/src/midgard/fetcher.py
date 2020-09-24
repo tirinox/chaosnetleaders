@@ -40,7 +40,7 @@ async def save_transactions(transactions):
             saved_list.append(tx_model)
         any_new = any_new or saved
 
-    if not any_new:
+    if transactions and not any_new:
         logging.info("all transactions are stale. nothing more to save.")
     return any_new, saved_list
 

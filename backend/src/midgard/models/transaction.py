@@ -25,7 +25,7 @@ class BEPTransaction(IdModel):
     output_asset = fields.CharField(50, index=True)
     output_amount = fields.FloatField()
     order_of_come = fields.IntField()
-    rune_volume = fields.FloatField(default=None)
+    rune_volume = fields.FloatField(default=None, null=True)
 
     hash = fields.CharField(255, unique=True)
 
@@ -71,7 +71,8 @@ class BEPTransaction(IdModel):
                 return True
             else:
                 return False
-        except exceptions.IntegrityError:
+        except exceptions.IntegrityError as e:
+            print(e)
             return False
 
     def get_price_rune(self):

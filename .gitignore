@@ -2,6 +2,7 @@
 .env
 config.yaml
 db_data
+letsencrypt/
 
 
 ### OSX ###

@@ -12,11 +12,8 @@ COPY frontend /app/
 RUN npm run build
 
 # Stage 2 - nginx & frontend dist
-FROM staticfloat/nginx-certbot
+FROM nginx:alpine
 
-# COPY nginx/prod.conf /etc/nginx/nginx.conf
 COPY --from=build-deps /app/dist/ /dist/
 
-# CMD ["nginx", "-g", "daemon off;"]
-ENTRYPOINT []
-CMD ["/bin/bash", "/scripts/entrypoint.sh"]
+CMD ["nginx", "-g", "daemon off;"]

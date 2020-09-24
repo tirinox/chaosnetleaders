@@ -1,4 +1,5 @@
-db_data
+db_data/
+letsencrypt/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -129,3 +129,7 @@ class BEPTransaction(IdModel):
         if volume:
             self.rune_volume = volume
             await self.save()
+
+    @classmethod
+    async def clear(cls):
+        await cls.all().delete()

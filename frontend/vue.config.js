@@ -17,5 +17,5 @@ module.exports = {
       ignored: '/app/node_modules/'
     }
   },
-  publicPath: '/leaderboard/'
+//  publicPath: '/leaderboard/'
 }

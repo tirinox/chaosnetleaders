@@ -111,7 +111,7 @@ class BEPTransaction(IdModel):
             max_date = await cls.annotate(max_date=Max('date')).values('max_date')
             max_date = int(max_date[0]['max_date'])
             return max_date
-        except (LookupError, ValueError):
+        except (LookupError, ValueError, TypeError):
             return 0
 
     @classmethod

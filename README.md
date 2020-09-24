@@ -1,19 +1,17 @@
-chaosnetleaders
+Leaders of the Chaosnet
 ===============
 
- Leaders of the Chaosnet
-
-<a href="https://github.com/vchaptsev/cookiecutter-django-vue">
-    <img src="https://img.shields.io/badge/built%20with-Cookiecutter%20Django%20Vue-blue.svg" />
-</a>
+It calculates and tracks total volume ($RUNE) of swaps and double swaps at
+[https://chaosnet.bepswap.com/](https://chaosnet.bepswap.com/)
 
 
-## Development
+You will need docker and [docker-compose](https://docs.docker.com/compose/install/).
+Copy `example.env` to `.env` and fill the variables.
 
-Install [Docker](https://docs.docker.com/install/) and [Docker-Compose](https://docs.docker.com/compose/). Start your virtual machines with the following shell command:
+To run all the containers:
 
-`docker-compose up --build`
+```make start```
 
-If all works well, you should be able to create an admin account with:
+If you want to develop backend, please, stop the backend container. And set
+`MYSQL_HOST=localhost` in the `.env` file. (To do fix this behaviour)
 
-`docker-compose run backend python manage.py createsuperuser`

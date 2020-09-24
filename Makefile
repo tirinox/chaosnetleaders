@@ -30,5 +30,4 @@ clean:
 
 upgrade:
 	@make -s pull
-	@make -s build
 	@make -s start

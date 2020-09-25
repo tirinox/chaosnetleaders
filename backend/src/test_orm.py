@@ -1,14 +1,10 @@
 import asyncio
-import logging
 import os
 
 from dotenv import load_dotenv
 from tortoise import Tortoise
 
 from midgard.fetcher import run_fetcher
-
-
-
 
 
 async def amain():

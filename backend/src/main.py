@@ -1,14 +1,11 @@
-import asyncio
+import logging
 import os
 
+from aiohttp import web
+from dotenv import load_dotenv
 from tortoise import Tortoise
 
 from midgard.aggregator import leaderboard
-from dotenv import load_dotenv
-from aiohttp import web
-
-import logging
-
 from midgard.fetcher import run_fetcher
 
 logging.basicConfig(level=logging.INFO)
@@ -18,7 +15,7 @@ BOARD_LIMIT = 100
 PORT = 5000
 
 
-async def hello(request):
+async def handler_leaderboard(request):
     timestamp = int(request.rel_url.query.get('since') or START_TIMESTAMP)
     limit = int(request.rel_url.query.get('limit') or BOARD_LIMIT)
 
@@ -48,7 +45,7 @@ if __name__ == '__main__':
     load_dotenv('../../.env')
 
     app = web.Application(middlewares=[])
-    app.add_routes([web.get('/api/v1/leaderboard', hello)])
+    app.add_routes([web.get('/api/v1/leaderboard', handler_leaderboard)])
     app.on_startup.append(init_db)
     app.on_startup.append(run_fetcher)
 

@@ -1,6 +1,11 @@
 // vue.config.js
 module.exports = {
   lintOnSave: false,
+  pages: {
+    index: {
+      entry: 'src/main.js'
+    }
+  },
   devServer: {
     hot: true,
     hotOnly: true,
@@ -14,7 +19,7 @@ module.exports = {
     },
     watchOptions: {
       poll: 1000,
-      ignored: '/app/node_modules/'
+      ignored: '/node_modules/'
     }
   },
 //  publicPath: '/leaderboard/'

@@ -12,7 +12,7 @@
       <tr v-for="(item, index) in data.leaderboard" :key="item.input_address">
         <td>{{ index + 1 }}.</td>
         <td>
-          <a :href="'https://explorer.binance.org/address/' + item.input_address">{{ item.input_address }}</a>
+          <a :href="'https://thorchain.net/addresses/' + item.input_address">{{ item.input_address }}</a>
         </td>
         <td><strong>{{ item.total_volume | volume }} ᚱ</strong></td>
         <td><small>{{ item.date | prettyDateFromTimestamp }}</small></td>

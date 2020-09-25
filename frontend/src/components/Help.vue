@@ -39,7 +39,12 @@
         It is solved by scanning backwards the transaction log in time and searching for the latest moment of a simple swap
         between ᚱ and the input or output asset of the double swap mentioned before.
       </p>
-      <pre>ᚱ volume = (Asset volume) / (ᚱ price)</pre>
+      <pre>
+        Prev Input Swap = Find(Previous Swap between ᚱ &lt;=&gt; This double swap input asset)
+        Prev Output Swap = Find(Previous Swap between ᚱ &lt;=&gt; This double swap output asset)
+        Prev Swap = What later?( (Prev Input Swap) or (Prev Output Swap) )
+        ᚱ volume = (This Input or Output asset volume) / (Prev Swap ᚱ price)
+      </pre>
     </div>
   </div>
 

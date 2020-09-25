@@ -3,7 +3,7 @@ export
 
 buildf:
 	$(info Make: Building frontend.)
-	cd frontend && yarn run build
+	cd frontend && yarn install && yarn run build
 	docker-compose -f "${DOCKER_COMPOSE_FILE}" restart nginx
 
 buildb:

@@ -34,7 +34,7 @@ export default {
   name: 'App',
   data() {
     return {
-      pkg_version: '0.0.7'
+      pkg_version: '0.0.8'
     }
   },
 }

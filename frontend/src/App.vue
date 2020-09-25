@@ -19,15 +19,21 @@
 
     <footer class="footer">
       <div class="container">
-        <span class="text-muted">This is an alpha version 0.0.4!</span>
+        <span class="text-muted">This is an alpha version {{ pkg_version }}!</span>
       </div>
     </footer>
   </div>
 </template>
 
 <script>
+
 export default {
-  name: 'App'
+  name: 'App',
+  data() {
+    return {
+      pkg_version: '0.0.5'
+    }
+  },
 }
 </script>
 

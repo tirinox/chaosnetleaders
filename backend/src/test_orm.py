@@ -1,12 +1,15 @@
 import asyncio
+import logging
 import os
 
 from dotenv import load_dotenv
 from tortoise import Tortoise
 
-from midgard.aggregator import total_volume
-from midgard.fetcher import run_fetcher
+from midgard.aggregator import total_volume, leaderboard
+from midgard.fetcher import run_fetcher, get_more_transactions_periodically
 from midgard.models.transaction import BEPTransaction
+
+logging.basicConfig(level=logging.INFO)
 
 
 async def amain():
@@ -22,11 +25,14 @@ async def amain():
     })
     await Tortoise.generate_schemas()
 
-    # await get_more_transactions()
+    await get_more_transactions_periodically()
     # await fill_rune_volumes()
 
     # await BEPTransaction.clear_rune_volume()
-    print(await total_volume())
+    #
+    # lb = await leaderboard(from_date=1600959386)
+    # print(lb)
+
 
 if __name__ == '__main__':
     load_dotenv('../../.env')

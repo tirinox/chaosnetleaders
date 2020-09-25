@@ -59,7 +59,10 @@ async def fetch_all_transactions(http_session):
             break
 
         await save_transactions(transactions)
-        logging.info(f'added {len(transactions)} transactions {i} of {count}')
+
+        local_count = await BEPTransaction.all().count()
+        logging.info(f'added {len(transactions)} transactions start = {i} of {count}; local db has {local_count} transactions')
+
         i += fetcher.batch_size
 
 
@@ -105,7 +108,11 @@ async def fetch_all_absent_transactions(http_session, verify_date=True):
                 logging.info('no new transactions; break fetching loop')
                 break
         else:
-            logging.info(f'added {len(transactions)} transactions {i} of {midgard_count}')
+            local_count = await BEPTransaction.all().count()
+            logging.info(
+                f'added {len(transactions)} transactions start = {i} of {midgard_count}; '
+                f'local db has {local_count} transactions')
+
         i += fetcher.batch_size
 
     return new_transactions

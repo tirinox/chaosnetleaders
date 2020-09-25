@@ -31,12 +31,22 @@ async def leaderboard(from_date=0, limit=10):
     # where date > 1599739200
     # group by input_address order by total_volume desc;
     results = await BEPTransaction\
-        .annotate(total_volume=Sum('rune_volume'), date=Max('date'))\
+        .annotate(total_volume=Sum('rune_volume'), last_date=Max('date'))\
         .filter(date__gte=from_date)\
         .group_by('input_address')\
         .order_by('-total_volume') \
         .limit(limit)\
         .values('total_volume', 'input_address', 'date')
+
+    last_dates = await BEPTransaction \
+        .annotate(last_date=Max('date')) \
+        .filter(date__gte=from_date) \
+        .group_by('input_address') \
+        .values('input_address', 'last_date')
+    last_dates_cache = {e['input_address']: e['last_date'] for e in last_dates}
+
+    for item in results:
+        item['date'] = last_dates_cache.get(item['input_address'], item['date'])
 
     return results
 

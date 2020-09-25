@@ -19,7 +19,7 @@
 
     <footer class="footer">
       <div class="container">
-        <span class="text-muted">This is an alpha version 0.0.3!</span>
+        <span class="text-muted">This is an alpha version 0.0.4!</span>
       </div>
     </footer>
   </div>

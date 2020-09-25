@@ -26,6 +26,8 @@
 
 <script>
 
+import axios from 'axios'
+
 export default {
   name: 'LeaderboardComponent',
   data () {
@@ -33,6 +35,7 @@ export default {
       data: []
     }
   },
+
   filters: {
     volume(x) {
       return Math.round(x)
@@ -42,6 +45,7 @@ export default {
       return date.toUTCString()
     }
   },
+
   mounted () {
     axios
       .get('/api/v1/leaderboard')

@@ -42,3 +42,5 @@ python main.py
 - [ ] List pagitation
 - [ ] Select time interval
 - [ ] Help page
+- [ ] Accurate Rune price calculation for double swaps
+- [ ] Make sure that database sync is correct

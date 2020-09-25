@@ -13,7 +13,7 @@ To build the frontend make sure you installed [node](https://nodejs.org/).
 Then run
 
 ```
-cd frontend && npm install && cd -
+cd frontend && yarn install && cd -
 make buildf
 ```
 

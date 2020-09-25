@@ -58,7 +58,7 @@ export default {
       if(total === 0) {
         return 0
       } else {
-        return Math.round(x / total * 100.0)
+        return (x / total * 100.0).toPrecision(2)
       }
     },
     shortAddress(addr, strLen) {

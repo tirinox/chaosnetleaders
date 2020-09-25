@@ -25,7 +25,14 @@ async def amain():
     })
     await Tortoise.generate_schemas()
 
-    await get_more_transactions_periodically()
+    tr = await BEPTransaction.filter(id=732).first()
+    print(f"tr = {tr}")
+    # brpr = await BEPTransaction.get_best_rune_price(tr.pool, tr.date)
+    # print(f"best rune price {tr.pool} @ {tr.date} => {brpr}")
+    print(await tr.calculate_rune_volume())
+
+
+    # await get_more_transactions_periodically()
     # await fill_rune_volumes()
 
     # await BEPTransaction.clear_rune_volume()

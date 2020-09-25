@@ -1,7 +1,10 @@
 <template lang="html">
   <div>
     <b-navbar toggleable="md" type="dark" variant="dark" class="mb-5">
-      <b-navbar-brand href="#">Chaosnet</b-navbar-brand>
+      <b-navbar-brand href="#">
+        <img src="img/icons/favicon-32x32.png" class="d-inline-block align-middle nav-logo pr-2" alt="Logo">
+        Chaosnet leaders
+      </b-navbar-brand>
 
       <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>
 
@@ -31,7 +34,7 @@ export default {
   name: 'App',
   data() {
     return {
-      pkg_version: '0.0.5'
+      pkg_version: '0.0.7'
     }
   },
 }
@@ -41,4 +44,5 @@ export default {
   .footer {
     padding: 5px;
   }
+
 </style>

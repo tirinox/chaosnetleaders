@@ -38,9 +38,11 @@ python main.py
 ```
 
 ### To do list
-- [ ] Set a nice GUI skin
+- [x] Set a nice GUI skin
+- [x] Total sum and share of each address
 - [ ] List pagitation
 - [ ] Select time interval
-- [ ] Help page
-- [ ] Accurate Rune price calculation for double swaps
+- [x] Help page
+- [x] Accurate Rune price calculation for double swaps
 - [ ] Make sure that database sync is correct
+- [ ] TX explorer

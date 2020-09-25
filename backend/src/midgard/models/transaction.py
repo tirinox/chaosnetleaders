@@ -72,10 +72,9 @@ class BEPTransaction(IdModel):
             else:
                 return False
         except exceptions.IntegrityError as e:
-            print(e)
             return False
 
-    def get_price_rune(self):
+    def _get_price_rune(self):
         if self.input_asset == self.RUNE_SYMBOL:
             return self.input_amount / self.output_amount
         elif self.output_asset == self.RUNE_SYMBOL:
@@ -83,13 +82,16 @@ class BEPTransaction(IdModel):
 
     @classmethod
     async def get_best_rune_price(cls, pool, date):
-        transaction1 = await cls.filter(date__gte=date, pool=pool, type=cls.TYPE_SWAP).order_by("date").first()
-        transaction2 = await cls.filter(date__lte=date, pool=pool, type=cls.TYPE_SWAP).order_by("-date").first()
+        # forwards
+        # transaction1 = await cls.filter(date__gte=date, pool=pool, type=cls.TYPE_SWAP).order_by("date").first()
 
-        prices = [tx.get_price_rune() for tx in (transaction1, transaction2) if tx is not None]
-        if prices:
-            avg_price = sum(prices) / len(prices)
-            return avg_price
+        transaction_before = await cls.filter(date__lte=date, pool=pool, type=cls.TYPE_SWAP).order_by("-date").first()
+
+        if transaction_before:
+            price = transaction_before._get_price_rune()
+            return price, transaction_before.date
+        else:
+            return None, None
 
     async def calculate_rune_volume(self):
         if self.type == self.TYPE_SWAP:
@@ -97,14 +99,25 @@ class BEPTransaction(IdModel):
             return self.input_amount if self.input_asset == self.RUNE_SYMBOL else self.output_amount
         else:
             # double
-            price = await self.get_best_rune_price(self.input_asset, self.date)
-            amount = self.input_amount
-            if price is None:
-                price = await self.get_best_rune_price(self.output_asset, self.date)
-                amount = self.output_amount
+            input_price, input_date = await self.get_best_rune_price(self.input_asset, self.date)
+            output_price, output_date = await self.get_best_rune_price(self.output_asset, self.date)
 
-            if price is not None:
-                return amount * price
+            # print(f'{self.input_asset}: input_price = {input_price}, date = {input_date}')
+            # print(f'{self.output_asset}: output_price = {output_price}, date = {output_date}')
+
+            if input_price and output_price:
+                input_later = input_date > output_date
+                price = input_price if input_later else output_price
+                amount = self.input_amount if input_later else self.output_amount
+            elif input_price:
+                price = input_price
+                amount = self.input_amount
+            elif output_price:
+                price = output_price
+                amount = self.output_amount
+            else:
+                return None
+            return amount * price
 
     @classmethod
     async def last_date(cls):
@@ -128,12 +141,15 @@ class BEPTransaction(IdModel):
         volume = await self.calculate_rune_volume()
         if volume:
             self.rune_volume = volume
-            await self.save()
+        else:
+            logging.warning(f"failed to calc rune volume for {self}; no data")
+            self.rune_volume = 0
+        await self.save()
 
     @classmethod
     async def clear(cls):
         await cls.all().delete()
 
-    # @classmethod
-    # async def clear_rune_volume(cls):
-    #     print(BEPTransaction.all().update(id=1).sql())
+    @classmethod
+    async def clear_rune_volume(cls):
+        await BEPTransaction.all().update(rune_volume=None)

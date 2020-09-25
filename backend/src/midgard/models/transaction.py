@@ -133,3 +133,7 @@ class BEPTransaction(IdModel):
     @classmethod
     async def clear(cls):
         await cls.all().delete()
+
+    # @classmethod
+    # async def clear_rune_volume(cls):
+    #     print(BEPTransaction.all().update(id=1).sql())

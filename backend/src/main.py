@@ -5,7 +5,7 @@ from aiohttp import web
 from dotenv import load_dotenv
 from tortoise import Tortoise
 
-from midgard.aggregator import leaderboard
+from midgard.aggregator import leaderboard, total_volume
 from midgard.fetcher import run_fetcher
 
 logging.basicConfig(level=logging.INFO)
@@ -20,10 +20,12 @@ async def handler_leaderboard(request):
     limit = int(request.rel_url.query.get('limit') or BOARD_LIMIT)
 
     lb = await leaderboard(timestamp, limit)
+    tv = await total_volume(from_date=timestamp)
     return web.json_response({
         'leaderboard': lb,
         'since': timestamp,
-        'limit': limit
+        'limit': limit,
+        'chaosnet_volume': tv
     })
 
 

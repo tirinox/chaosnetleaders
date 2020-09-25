@@ -4,7 +4,9 @@ import os
 from dotenv import load_dotenv
 from tortoise import Tortoise
 
+from midgard.aggregator import total_volume
 from midgard.fetcher import run_fetcher
+from midgard.models.transaction import BEPTransaction
 
 
 async def amain():
@@ -23,11 +25,8 @@ async def amain():
     # await get_more_transactions()
     # await fill_rune_volumes()
 
-    await run_fetcher()
-
-    while True:
-        await asyncio.sleep(5.0)
-
+    # await BEPTransaction.clear_rune_volume()
+    print(await total_volume())
 
 if __name__ == '__main__':
     load_dotenv('../../.env')

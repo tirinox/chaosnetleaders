@@ -8,6 +8,8 @@ from utils import schedule_task_periodically
 URL_SWAP_GEN = lambda off, n: f"https://chaosnet-midgard.bepswap.com/v1/txs?offset={off}&limit={n}&type=swap,doubleSwap"
 MIDGARD_TX_BATCH = 50
 FETCH_INTERVAL = 60.0
+FETCH_FULL_INTERVAL = 60.0 * 60 * 24  # full scan every day
+FETCH_FULL_START_DELAY = 10.0
 
 
 class Fetcher:
@@ -45,23 +47,25 @@ async def save_transactions(transactions):
     return any_new, saved_list
 
 
-async def fetch_all_transactions(http_session):
-    logging.info('fetching all transactions.')
+async def fetch_all_transactions(http_session, clear=False):
+    logging.info('[FULL SCAN] fetching all transactions.')
     fetcher = Fetcher(MIDGARD_TX_BATCH, URL_SWAP_GEN, http_session)
 
-    await BEPTransaction.all().delete()
+    if clear:
+        logging.warning("[FULL SCAN] clearing all BEPTransaction-s!")
+        await BEPTransaction.all().delete()
 
     i = 0
     while True:
         transactions, count = await fetcher.get_transaction_list(i, fetcher.batch_size)
         if not transactions:
-            logging.info('no more transactions; break fetching loop')
+            logging.info('[FULL SCAN] no more transactions; break fetching loop')
             break
 
-        await save_transactions(transactions)
+        _, saved_transactions = await save_transactions(transactions)
 
         local_count = await BEPTransaction.all().count()
-        logging.info(f'added {len(transactions)} transactions start = {i} of {count}; local db has {local_count} transactions')
+        logging.info(f'[FULL SCAN] added {len(saved_transactions)} transactions start = {i} of {count}; local db has {local_count} transactions')
 
         i += fetcher.batch_size
 
@@ -76,6 +80,7 @@ def min_date(txs):
 
 
 async def fetch_all_absent_transactions(http_session, verify_date=True):
+    logging.info('fetching new transactions.')
     new_transactions = []
 
     fetcher = Fetcher(MIDGARD_TX_BATCH, URL_SWAP_GEN, http_session)
@@ -90,14 +95,12 @@ async def fetch_all_absent_transactions(http_session, verify_date=True):
             break
 
         min_fetched_date = min(min_date(transactions), min_fetched_date)
-        # print(f'min_fetched_date = {min_fetched_date}')
 
         any_new, saved_transactions = await save_transactions(transactions)
 
         new_transactions += saved_transactions
 
         max_local_date = await BEPTransaction.last_date()
-        # print(f'max_local_date = {max_local_date}')
 
         if not any_new:
             if verify_date and max_local_date < min_fetched_date:
@@ -110,7 +113,7 @@ async def fetch_all_absent_transactions(http_session, verify_date=True):
         else:
             local_count = await BEPTransaction.all().count()
             logging.info(
-                f'added {len(transactions)} transactions start = {i} of {midgard_count}; '
+                f'added {len(saved_transactions)} transactions start = {i} of {midgard_count}; '
                 f'local db has {local_count} transactions')
 
         i += fetcher.batch_size
@@ -118,11 +121,15 @@ async def fetch_all_absent_transactions(http_session, verify_date=True):
     return new_transactions
 
 
-async def get_more_transactions_periodically():
+async def get_more_transactions_periodically(full_scan=False):
     async with aiohttp.ClientSession() as session:
-        await fetch_all_absent_transactions(session)
+        if full_scan:
+            await fetch_all_transactions(session)
+        else:
+            await fetch_all_absent_transactions(session)
         await fill_rune_volumes()
 
 
 async def run_fetcher(*_):
     schedule_task_periodically(FETCH_INTERVAL, get_more_transactions_periodically)
+    schedule_task_periodically(FETCH_FULL_INTERVAL, get_more_transactions_periodically, FETCH_FULL_START_DELAY, True)

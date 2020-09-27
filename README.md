@@ -44,5 +44,7 @@ python main.py
 - [ ] Select time interval
 - [x] Help page
 - [x] Accurate Rune price calculation for double swaps
-- [ ] Make sure that database sync is correct
+- [x] Make sure that database sync is correct
 - [ ] TX explorer
+- [ ] Count of transactions per address
+- [ ] Snapshots every day and track rank dynamics

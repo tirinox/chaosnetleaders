@@ -4,12 +4,24 @@ import os
 
 from dotenv import load_dotenv
 from tortoise import Tortoise
+import time
 
 from midgard.aggregator import total_volume, leaderboard
 from midgard.fetcher import run_fetcher, get_more_transactions_periodically
 from midgard.models.transaction import BEPTransaction
+from utils import schedule_task_periodically
 
 logging.basicConfig(level=logging.INFO)
+
+
+async def period_delay_test():
+    print(f'start {time.time()}')
+    async def foo():
+        print(f'foo! {time.time()}')
+
+    schedule_task_periodically(5, foo, 3)
+
+    await asyncio.sleep(30)
 
 
 async def amain():
@@ -31,7 +43,8 @@ async def amain():
     # print(f"best rune price {tr.pool} @ {tr.date} => {brpr}")
     print(await tr.calculate_rune_volume())
 
-
+    await run_fetcher()
+    # await period_delay_test()
     # await get_more_transactions_periodically()
     # await fill_rune_volumes()
 

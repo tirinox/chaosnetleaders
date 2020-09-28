@@ -1,13 +1,15 @@
 const webpack = require('webpack')
-const Dotenv = require('dotenv-webpack')
-
-process.env.VUE_APP_VERSION = require('./package.json').version
 
 module.exports = {
   filenameHashing: true,
-  configureWebpack: {
-    plugins: [
-      new Dotenv(),
-    ]
+  configureWebpack: config => {
+    return {
+      plugins: [
+        new webpack.DefinePlugin({
+          // eslint-disable-next-line no-undef
+          'APPLICATION_VERSION': JSON.stringify(require('./package.json').version),
+        })
+      ]
+    }
   },
 }

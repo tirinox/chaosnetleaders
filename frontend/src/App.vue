@@ -22,7 +22,7 @@
 
     <footer class="footer">
       <div class="container">
-        <span class="text-muted">This is an alpha version {{ pkg_version }}!</span>
+        <span class="text-muted">This is an alpha version {{ packageJson }}!</span>
       </div>
     </footer>
   </div>
@@ -32,11 +32,11 @@
 
 export default {
   name: 'App',
-  data() {
-    return {
-      pkg_version: '0.0.8'
+  computed: {
+    packageJson() {
+      return '0.0.9'
     }
-  },
+  }
 }
 </script>
 

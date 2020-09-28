@@ -45,6 +45,12 @@
         Prev Swap = What later?( (Prev Input Swap) or (Prev Output Swap) )
         ᚱ volume = (This Input or Output asset volume) / (Prev Swap ᚱ price)
       </pre>
+      <h3>Change log</h3>
+      <h4>v. 0.0.9</h4>
+      <ul>
+        <li>Change log added</li>
+        <li>Full sync with Midgard every 24 hours</li>
+      </ul>
     </div>
   </div>
 

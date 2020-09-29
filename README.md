@@ -40,11 +40,11 @@ python main.py
 ### To do list
 - [x] Set a nice GUI skin
 - [x] Total sum and share of each address
-- [ ] List pagitation
-- [ ] Select time interval
+- [x] List pagination
+- [x] Select time interval
 - [x] Help page
 - [x] Accurate Rune price calculation for double swaps
 - [x] Make sure that database sync is correct
 - [ ] TX explorer
-- [ ] Count of transactions per address
+- [x] Count of transactions per address
 - [ ] Snapshots every day and track rank dynamics

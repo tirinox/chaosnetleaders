@@ -4,7 +4,7 @@
       <h1>Chaosnet Leaderboard</h1>
 
       <p class="subtitle">
-        <b-spinner type="grow" label="Loading" small v-if="loading"></b-spinner>
+        <b-spinner label="Loading" small v-if="loading"></b-spinner>
         Since <em>{{ data.since | prettyDateFromTimestamp }}</em></p>
       <div>
         <b-button-group size="sm" class="mb-2">
@@ -16,7 +16,7 @@
         </b-button-group>
       </div>
 
-      <table class="table table-striped" v-if="!loading">
+      <table class="table table-striped">
         <thead>
           <tr>
             <th scope="col">Place</th>

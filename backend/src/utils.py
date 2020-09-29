@@ -1,4 +1,7 @@
 import asyncio
+from functools import wraps
+
+from aiohttp import web
 
 
 async def run_periodically(wait_time, func, _delay=0, *args):
@@ -40,3 +43,20 @@ async def cancel_scheduled_task(task):
         await task
     except asyncio.CancelledError:
         pass
+
+
+def error_json(error):
+    return web.json_response({
+        'result': 'error',
+        'error': error
+    })
+
+
+def error_guard(func):
+    @wraps(func)
+    async def wrapped(*args, **kwargs):
+        try:
+            return await func(*args, **kwargs)
+        except Exception as e:
+            return error_json(str(e))
+    return wrapped

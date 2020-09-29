@@ -2,7 +2,7 @@
   <div>
     <b-navbar toggleable="md" type="dark" variant="dark" class="mb-5">
       <b-navbar-brand href="#">
-        <img src="img/icons/favicon-32x32.png" class="d-inline-block align-middle nav-logo pr-2" alt="Logo">
+        <img src="/img/icons/favicon-32x32.png" class="d-inline-block align-middle nav-logo pr-2" alt="Logo">
         Chaosnet leaders
       </b-navbar-brand>
 
@@ -22,7 +22,7 @@
 
     <footer class="footer">
       <div class="container">
-        <span class="text-muted">This is an alpha version {{ packageJson }}!</span>
+        <span class="text-muted">This is an beta version {{ packageJson }}!</span>
       </div>
     </footer>
   </div>
@@ -34,7 +34,7 @@ export default {
   name: 'App',
   computed: {
     packageJson() {
-      return '0.0.9'
+      return '0.1.0'
     }
   }
 }

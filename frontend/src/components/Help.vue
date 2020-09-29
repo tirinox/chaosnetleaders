@@ -46,6 +46,11 @@
         ᚱ volume = (This Input or Output asset volume) / (Prev Swap ᚱ price)
       </pre>
       <h3>Change log</h3>
+      <h4>v. 0.1.0</h4>
+      <ul>
+        <li>Pagination</li>
+        <li>Start date switch with competition start, all time, last month, last week, last day options</li>
+      </ul>
       <h4>v. 0.0.9</h4>
       <ul>
         <li>Change log added</li>

@@ -1,17 +1,17 @@
-from tortoise.functions import Sum, Max
+from tortoise.functions import Sum, Max, Count
 
 from midgard.models.transaction import BEPTransaction
 
 import logging
 
 
-BATCH = 100
+FILL_VOLUME_BATCH = 100
 
 
 async def fill_rune_volumes():
     number = 0
     while True:
-        txs = await BEPTransaction.without_volume().limit(100)
+        txs = await BEPTransaction.without_volume().limit(FILL_VOLUME_BATCH)
         if not txs:
             break
 
@@ -25,18 +25,27 @@ async def fill_rune_volumes():
     return number
 
 
-async def leaderboard(from_date=0, limit=10):
+async def total_items_in_leaderboard(from_date=0):
+    r = await BEPTransaction \
+        .annotate(total_addresses=Count('input_address', distinct=True)) \
+        .filter(date__gte=from_date)\
+        .values('total_addresses')
+    return r[0]['total_addresses']
+
+
+async def leaderboard(from_date=0, offset=0, limit=10):
     # select input_address, sum(rune_volume) as total_volume
     # from beptransaction
     # where date > 1599739200
     # group by input_address order by total_volume desc;
     results = await BEPTransaction\
-        .annotate(total_volume=Sum('rune_volume'), last_date=Max('date'))\
+        .annotate(total_volume=Sum('rune_volume'), n=Count('id'))\
         .filter(date__gte=from_date)\
         .group_by('input_address')\
         .order_by('-total_volume') \
+        .offset(offset)\
         .limit(limit)\
-        .values('total_volume', 'input_address', 'date')
+        .values('total_volume', 'input_address', 'date', 'n')
 
     last_dates = await BEPTransaction \
         .annotate(last_date=Max('date')) \

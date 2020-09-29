@@ -6,29 +6,15 @@ from aiohttp import web
 from dotenv import load_dotenv
 from tortoise import Tortoise
 
-from midgard.aggregator import leaderboard, total_volume, fill_rune_volumes
+from api import handler_leaderboard
+from midgard.aggregator import fill_rune_volumes
 from midgard.fetcher import run_fetcher
 from midgard.models.transaction import BEPTransaction
 
-logging.basicConfig(level=logging.INFO)
 
-START_TIMESTAMP = 1599739200  # 12pm UTC, Thursday 10th September 2020
-BOARD_LIMIT = 100
 PORT = 5000
 
-
-async def handler_leaderboard(request):
-    timestamp = int(request.rel_url.query.get('since') or START_TIMESTAMP)
-    limit = int(request.rel_url.query.get('limit') or BOARD_LIMIT)
-
-    lb = await leaderboard(timestamp, limit)
-    tv = await total_volume(from_date=timestamp)
-    return web.json_response({
-        'leaderboard': lb,
-        'since': timestamp,
-        'limit': limit,
-        'chaosnet_volume': tv
-    })
+logging.basicConfig(level=logging.INFO)
 
 
 async def init_db(*_):

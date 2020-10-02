@@ -64,6 +64,8 @@ async def fetch_all_transactions(http_session, clear=False):
 
         _, saved_transactions = await save_transactions(transactions)
 
+        await fill_rune_volumes()
+
         local_count = await BEPTransaction.all().count()
         logging.info(f'[FULL SCAN] added {len(saved_transactions)} transactions start = {i} of {count}; local db has {local_count} transactions')
 
@@ -116,6 +118,8 @@ async def fetch_all_absent_transactions(http_session, verify_date=True):
                 f'added {len(saved_transactions)} transactions start = {i} of {midgard_count}; '
                 f'local db has {local_count} transactions')
 
+        await fill_rune_volumes()
+
         i += fetcher.batch_size
 
     return new_transactions
@@ -123,11 +127,14 @@ async def fetch_all_absent_transactions(http_session, verify_date=True):
 
 async def get_more_transactions_periodically(full_scan=False):
     async with aiohttp.ClientSession() as session:
-        if full_scan:
-            await fetch_all_transactions(session)
-        else:
-            await fetch_all_absent_transactions(session)
-        await fill_rune_volumes()
+        try:
+            if full_scan:
+                await fetch_all_transactions(session)
+            else:
+                await fetch_all_absent_transactions(session)
+            await fill_rune_volumes()
+        except Exception as e:
+            logging.error(f"failed task: get_more_transactions_periodically(full_scal={full_scan}), error = {e}")
 
 
 async def run_fetcher(*_):

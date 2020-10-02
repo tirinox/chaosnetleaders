@@ -43,7 +43,9 @@ async def amain():
     # print(f"best rune price {tr.pool} @ {tr.date} => {brpr}")
     print(await tr.calculate_rune_volume())
 
-    print(await total_items_in_leaderboard(from_date=1600959386))
+    # print(await total_items_in_leaderboard(from_date=1600959386))
+
+    print(await BEPTransaction.all_for_address('bnb1k5ypfc7azkkt8v792ucgldlfrlh0att5733lxc'))
 
     # await run_fetcher()
     # await period_delay_test()

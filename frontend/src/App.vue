@@ -22,7 +22,7 @@
 
     <footer class="footer">
       <div class="container">
-        <span class="text-muted">This is an beta version {{ packageJson }}!</span>
+        <span class="text-muted">This is an beta version {{ packageJson }}! Made by community ⚡</span>
       </div>
     </footer>
   </div>
@@ -34,7 +34,7 @@ export default {
   name: 'App',
   computed: {
     packageJson() {
-      return '0.1.1'
+      return '0.1.2'
     }
   }
 }

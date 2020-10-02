@@ -128,10 +128,6 @@ class BEPTransaction(IdModel):
         except (LookupError, ValueError, TypeError):
             return 0
 
-    @classmethod
-    def filter_from_date(cls, min_date):
-        # todo: filter by last TX hash if the dates are same!
-        return cls.filter(date__gt=min_date).order_by('date')
 
     @classmethod
     def without_volume(cls):
@@ -153,3 +149,7 @@ class BEPTransaction(IdModel):
     @classmethod
     async def clear_rune_volume(cls):
         await BEPTransaction.all().update(rune_volume=None)
+
+    @classmethod
+    async def all_for_address(cls, input_address):
+        return await cls.filter(input_address=input_address)

@@ -46,6 +46,14 @@
         ᚱ volume = (This Input or Output asset volume) / (Prev Swap ᚱ price)
       </pre>
       <h3>Change log</h3>
+      <h4>v. 0.1.2</h4>
+      <ul>
+        <li>Fixed the fetch task fail and stop</li>
+      </ul>
+      <h4>v. 0.1.1</h4>
+      <ul>
+        <li>Small fixes</li>
+      </ul>
       <h4>v. 0.1.0</h4>
       <ul>
         <li>Pagination</li>

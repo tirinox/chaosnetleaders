@@ -128,7 +128,6 @@ class BEPTransaction(IdModel):
         except (LookupError, ValueError, TypeError):
             return 0
 
-
     @classmethod
     def without_volume(cls):
         return cls.filter(rune_volume=None)

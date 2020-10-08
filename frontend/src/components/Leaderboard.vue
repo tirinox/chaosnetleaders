@@ -33,7 +33,7 @@
             </th>
 
             <td>
-              <a :href="'https://thorchain.net/addresses/' + item.input_address" target="_blank">
+              <a :href="'https://viewblock.io/thorchain/address/' + item.input_address" target="_blank">
                 {{ item.input_address | shortAddress }}
               </a>
             </td>

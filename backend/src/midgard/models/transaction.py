@@ -27,10 +27,41 @@ class BEPTransaction(IdModel):
     order_of_come = fields.IntField()
     rune_volume = fields.FloatField(default=None, null=True)
 
+    block_height = fields.IntField(default=0, null=True)
+    input_usd_price = fields.FloatField(default=0.0)
+    output_usd_price = fields.FloatField(default=0.0)
+
     hash = fields.CharField(255, unique=True)
 
     def __str__(self):
         return f"{self.type} @ {datetime.datetime.fromtimestamp(self.date)}(#{self.id}: {self.input_amount} {self.input_asset} -> {self.output_amount} {self.output_asset})"
+
+    def __repr__(self) -> str:
+        return super().__str__()
+
+    @property
+    def simple_json(self):
+        return {
+            'in': {
+                'coin': self.input_asset,
+                'amount': self.input_amount,
+                'usd': self.input_usd_price
+            },
+            'out': {
+                'coin': self.output_asset,
+                'amount': self.output_amount,
+                'usd': self.output_usd_price
+            },
+            'address:': self.input_address,
+            'height': self.block_height,
+            'date': self.date,
+            'pool': self.pool,
+            'type': self.type,
+        }
+
+    @property
+    def other_asset(self):
+        return self.input_asset if self.output_address == self.RUNE_SYMBOL else self.output_address
 
     @classmethod
     def from_json(cls, tx, order_of_come=0):
@@ -58,7 +89,11 @@ class BEPTransaction(IdModel):
                                output_asset=out_coin['asset'],
                                output_amount=out_amount,
                                hash=tx_hash,
-                               order_of_come=order_of_come)
+                               order_of_come=order_of_come,
+                               block_height=int(tx['height']),
+                               input_usd_price=0.0,
+                               output_usd_price=0.0
+                               )
         except (LookupError, ValueError) as e:
             logging.error(f"failed to parse transaction JSON; exeption: {e}")
             return None
@@ -131,6 +166,10 @@ class BEPTransaction(IdModel):
     @classmethod
     def without_volume(cls):
         return cls.filter(rune_volume=None)
+
+    @property
+    def is_double(self):
+        return self.type == self.TYPE_DOUBLE_SWAP
 
     async def fill_rune_volume(self):
         volume = await self.calculate_rune_volume()

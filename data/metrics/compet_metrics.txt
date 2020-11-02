@@ -1,0 +1,81 @@
+0. The table
+
+Create Table: CREATE TABLE `beptransaction` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `type` varchar(20) NOT NULL,
+  `date` int(11) NOT NULL,
+  `pool` varchar(50) NOT NULL,
+  `input_address` varchar(255) NOT NULL,
+  `input_asset` varchar(50) NOT NULL,
+  `input_amount` double NOT NULL,
+  `output_address` varchar(255) NOT NULL,
+  `output_asset` varchar(50) NOT NULL,
+  `output_amount` double NOT NULL,
+  `order_of_come` int(11) NOT NULL,
+  `rune_volume` double DEFAULT NULL,
+  `hash` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `hash` (`hash`),
+  KEY `idx_beptransact_date_4aae2e` (`date`),
+  KEY `idx_beptransact_pool_aff60f` (`pool`),
+  KEY `idx_beptransact_input_a_a4c3bc` (`input_address`),
+  KEY `idx_beptransact_input_a_351ab2` (`input_asset`),
+  KEY `idx_beptransact_output__a66e5c` (`output_address`),
+  KEY `idx_beptransact_output__a74bdb` (`output_asset`)
+) ENGINE=InnoDB AUTO_INCREMENT=55917 DEFAULT CHARSET=utf8mb4
+
+Leaderboard Query:
+SELECT `input_address`,SUM(`rune_volume`) `total_volume`,COUNT(`id`) `n` FROM `beptransaction` WHERE `date`>=1599739200 AND `date`<=1602158400 GROUP BY `input_address` ORDER BY SUM(`rune_volume`) DESC;
+
+
+1. Total transactions
+
+SELECT COUNT(`id`) `n` FROM `beptransaction` WHERE `date`>=1599739200 AND `date`<=1602158400;
++-------+
+| n     |
++-------+
+| 23398 |
++-------+
+
+2. Number of TXS by pool
+
+SELECT `pool`, COUNT(`id`) `n`, MIN(rune_volume), MAX(rune_volume), AVG(rune_volume), SUM(rune_volume)  FROM `beptransaction` WHERE `date`>=1599739200 AND `date`<=1602158400 GROUP BY `pool`;
+
+
++-----------------+-------+------------------+------------------+--------------------+--------------------+
+| pool            | n     | MIN(rune_volume) | MAX(rune_volume) | AVG(rune_volume)   | SUM(rune_volume)   |
++-----------------+-------+------------------+------------------+--------------------+--------------------+
+| BNB.AVA-645     |  1309 |       1.61408475 | 278224.245846471 |  657.1623143794853 |  860225.4695227463 |
+| BNB.BNB         | 11436 |        0.0006971 |           200000 | 2556.3102684337823 | 29233964.229808737 |
+| BNB.BOLT-4C6    |    18 | 5.11538510846721 |              210 |  68.83603260993367 |  1239.048586978806 |
+| BNB.BTCB-1DE    |  2250 |               10 |    4378.46772809 |   448.081313657194 | 1008182.9557286865 |
+| BNB.BULL-BE4    |   367 |            14.04 |             2500 | 154.20159558880235 |  56591.98558109046 |
+| BNB.BUSD-BD1    |  6173 | 1.48648702850049 |   29926.01962861 |  880.4761319482304 |  5435179.162516426 |
+| BNB.CAN-677     |    48 |       45.9414995 | 1310.87367578258 | 154.77344148716216 |  7429.125191383784 |
+| BNB.DOS-120     |    68 | 31.5036350845363 |             1000 | 166.27704464892426 |  11306.83903612685 |
+| BNB.EOSBULL-F0D |    81 | 62.8626719087476 |              500 | 122.04139747167198 |   9885.35319520543 |
+| BNB.ETH-1C9     |   666 |  1.1968409016666 |    6378.47557389 |   446.052690144611 |  297071.0916363109 |
+| BNB.ETHBULL-D33 |   145 | 16.0449107786787 | 633.918260063489 | 108.19949837047095 | 15688.927263718288 |
+| BNB.FTM-A64     |   173 |           8.3202 |     2268.5963648 |  170.3717099251974 |  29474.30581705915 |
+| BNB.MITX-CAA    |     2 |              100 | 797.663798282696 |   448.831899141348 |   897.663798282696 |
+| BNB.SWINGBY-888 |   126 |               10 |        2623.4559 | 353.14612401098003 |  44496.41162538349 |
+| BNB.TWT-8C2     |   536 |       0.91603554 |            10000 | 364.91721988789243 | 195595.62985991035 |
++-----------------+-------+------------------+------------------+--------------------+--------------------+
+
+3. Number of addresses
+
+SELECT COUNT(DISTINCT input_address)  FROM `beptransaction` WHERE `date`>=1599739200 AND `date`<=1602158400;
+
+4. Avg TX number per address: 47.364372469635626
+
+5. swap/vs double swap
+
+SELECT `type`, COUNT(*) FROM `beptransaction` WHERE `date`>=1599739200 AND `date`<=1602158400 GROUP BY `type`;
+
++------------+----------+
+| type       | COUNT(*) |
++------------+----------+
+| doubleSwap |     4427 |
+| swap       |    18971 |
++------------+----------+
+

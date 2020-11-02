@@ -14,8 +14,7 @@ MAX_TX_TO_FETCH_FULLSCAN = 2000
 
 
 class Fetcher:
-    def __init__(self, batch_size, url_generator, session: aiohttp.ClientSession):
-        self.batch_size = batch_size
+    def __init__(self, url_generator, session: aiohttp.ClientSession):
         self.url_generator = url_generator
         self.session = session
 
@@ -26,12 +25,13 @@ class Fetcher:
             json = await resp.json()
             count = int(json['count'])
             models = []
-            for i, tx in enumerate(json['txs'], start=1):
+            txs = json['txs']
+            for i, tx in enumerate(txs, start=1):
                 tx_model = BEPTransaction.from_json(tx, order_of_come=i)
                 if tx_model is not None:
                     models.append(tx_model)
 
-            return models, count
+            return models, count, len(txs) > 0
 
 
 async def save_transactions(transactions):
@@ -50,7 +50,7 @@ async def save_transactions(transactions):
 
 async def fetch_all_transactions(http_session, clear=False, max_items_deep=0):
     logging.info('[FULL SCAN] fetching all transactions.')
-    fetcher = Fetcher(MIDGARD_TX_BATCH, URL_SWAP_GEN, http_session)
+    fetcher = Fetcher(URL_SWAP_GEN, http_session)
 
     if clear:
         logging.warning("[FULL SCAN] clearing all BEPTransaction-s!")
@@ -61,8 +61,8 @@ async def fetch_all_transactions(http_session, clear=False, max_items_deep=0):
         if max_items_deep != 0 and i >= max_items_deep:
             break
 
-        transactions, count = await fetcher.get_transaction_list(i, fetcher.batch_size)
-        if not transactions:
+        transactions, count, go_on = await fetcher.get_transaction_list(i, MIDGARD_TX_BATCH)
+        if not go_on:
             logging.info('[FULL SCAN] no more transactions; break fetching loop')
             break
 
@@ -73,7 +73,7 @@ async def fetch_all_transactions(http_session, clear=False, max_items_deep=0):
         local_count = await BEPTransaction.all().count()
         logging.info(f'[FULL SCAN] added {len(saved_transactions)} transactions start = {i} of {count}; local db has {local_count} transactions')
 
-        i += fetcher.batch_size
+        i += MIDGARD_TX_BATCH
 
 
 BIG_NUMBER = 2 ** 63
@@ -89,14 +89,14 @@ async def fetch_all_absent_transactions(http_session, verify_date=True):
     logging.info('fetching new transactions.')
     new_transactions = []
 
-    fetcher = Fetcher(MIDGARD_TX_BATCH, URL_SWAP_GEN, http_session)
+    fetcher = Fetcher(URL_SWAP_GEN, http_session)
 
     min_fetched_date = BIG_NUMBER
 
     i = 0
     while True:
-        transactions, midgard_count = await fetcher.get_transaction_list(i, fetcher.batch_size)
-        if not transactions:
+        transactions, midgard_count, go_on = await fetcher.get_transaction_list(i, MIDGARD_TX_BATCH)
+        if not go_on:
             logging.info('no more transactions; break fetching loop')
             break
 
@@ -124,7 +124,7 @@ async def fetch_all_absent_transactions(http_session, verify_date=True):
 
         await fill_rune_volumes()
 
-        i += fetcher.batch_size
+        i += MIDGARD_TX_BATCH
 
     return new_transactions
 
@@ -144,3 +144,4 @@ async def get_more_transactions_periodically(full_scan=False):
 async def run_fetcher(*_):
     schedule_task_periodically(FETCH_INTERVAL, get_more_transactions_periodically)
     schedule_task_periodically(FETCH_FULL_INTERVAL, get_more_transactions_periodically, FETCH_FULL_START_DELAY, True)
+

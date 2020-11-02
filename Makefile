@@ -38,4 +38,4 @@ upgrade:
 	@make -s start
 
 dbcli:
-	@docker-compose -f "${DOCKER_COMPOSE_FILE}" exec db mysql -p thorchain
+	@docker-compose -f "${DOCKER_COMPOSE_FILE}" exec db mysql -p${MYSQL_ROOT_PASSWORD} thorchain

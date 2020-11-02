@@ -10,6 +10,7 @@ MIDGARD_TX_BATCH = 50
 FETCH_INTERVAL = 60.0
 FETCH_FULL_INTERVAL = 60.0 * 60 * 24  # full scan every day
 FETCH_FULL_START_DELAY = 10.0
+MAX_TX_TO_FETCH_FULLSCAN = 2000
 
 
 class Fetcher:
@@ -47,7 +48,7 @@ async def save_transactions(transactions):
     return any_new, saved_list
 
 
-async def fetch_all_transactions(http_session, clear=False):
+async def fetch_all_transactions(http_session, clear=False, max_items_deep=0):
     logging.info('[FULL SCAN] fetching all transactions.')
     fetcher = Fetcher(MIDGARD_TX_BATCH, URL_SWAP_GEN, http_session)
 
@@ -57,6 +58,9 @@ async def fetch_all_transactions(http_session, clear=False):
 
     i = 0
     while True:
+        if max_items_deep != 0 and i >= max_items_deep:
+            break
+
         transactions, count = await fetcher.get_transaction_list(i, fetcher.batch_size)
         if not transactions:
             logging.info('[FULL SCAN] no more transactions; break fetching loop')
@@ -129,7 +133,7 @@ async def get_more_transactions_periodically(full_scan=False):
     async with aiohttp.ClientSession() as session:
         try:
             if full_scan:
-                await fetch_all_transactions(session)
+                await fetch_all_transactions(session, max_items_deep=MAX_TX_TO_FETCH_FULLSCAN)
             else:
                 await fetch_all_absent_transactions(session)
             await fill_rune_volumes()

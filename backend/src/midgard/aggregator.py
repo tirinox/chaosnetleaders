@@ -25,23 +25,27 @@ async def fill_rune_volumes():
     return number
 
 
-async def total_items_in_leaderboard(from_date=0):
+async def total_items_in_leaderboard(from_date=0, to_date=0):
     r = await BEPTransaction \
         .annotate(total_addresses=Count('input_address', distinct=True)) \
-        .filter(date__gte=from_date)\
+        .filter(date__gte=from_date) \
+        .filter(date__lte=to_date) \
         .values('total_addresses')
     return r[0]['total_addresses']
 
 
-async def leaderboard(from_date=0, offset=0, limit=10):
-    # select input_address, sum(rune_volume) as total_volume
-    # from beptransaction
-    # where date > 1599739200
-    # group by input_address order by total_volume desc;
+async def leaderboard(from_date=0, to_date=0, offset=0, limit=10):
+    # SELECT `input_address` `input_address`,`date` `date`,SUM(`rune_volume`) `total_volume`,COUNT(`id`) `n`
+    # FROM `beptransaction`
+    # WHERE `date`>=1599739200 AND `date`<=1602158400
+    # GROUP BY `input_address`
+    # ORDER BY SUM(`rune_volume`) DESC
+
     results = await BEPTransaction\
         .annotate(total_volume=Sum('rune_volume'), n=Count('id'))\
         .filter(date__gte=from_date)\
-        .group_by('input_address')\
+        .filter(date__lte=to_date) \
+        .group_by('input_address') \
         .order_by('-total_volume') \
         .offset(offset)\
         .limit(limit)\
@@ -60,10 +64,11 @@ async def leaderboard(from_date=0, offset=0, limit=10):
     return results
 
 
-async def total_volume(from_date=0):
+async def total_volume(from_date=0, to_date=0):
     try:
         result = await BEPTransaction.annotate(v=Sum('rune_volume'))\
-            .filter(date__gte=from_date)\
+            .filter(date__gte=from_date) \
+            .filter(date__lte=to_date) \
             .values('v')
         return float(result[0]['v'])
     except (TypeError, LookupError):

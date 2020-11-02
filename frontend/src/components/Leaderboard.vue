@@ -5,7 +5,18 @@
 
       <p class="subtitle">
         <b-spinner label="Loading" small v-if="loading"></b-spinner>
-        Since <em>{{ data.since | prettyDateFromTimestamp }}</em></p>
+        <span class="text-muted">Since</span>
+          <em v-if="data.since > 0">
+            {{ data.since | prettyDateFromTimestamp }}
+          </em>
+          <span class="text-muted" v-if="data.since <= 0">
+            the beginning of time...
+          </span>
+        <span v-if="data.to < 2147483647">
+          <span class="text-muted"> to</span> <em>{{ data.to | prettyDateFromTimestamp }}</em>
+        </span>
+      </p>
+
       <div>
         <b-button-group size="sm" class="mb-2">
           <b-button variant="warning" v-on:click="navigateToDate('competition')">Competition</b-button>
@@ -77,7 +88,8 @@ import axios from 'axios'
 import { nicePercentFormat, volumeFormat } from '@/lib/digits'
 import { shortAddress } from '@/lib/address'
 
-const COMPETITION_TIMESTAMP = 1599739200  // 12pm UTC, Thursday 10th September 2020
+const COMPETITION_START_TIMESTAMP = 1599739200  // 12pm UTC, Thursday 10th September 2020
+const COMPETITION_ENDING_TIMESTAMP = 1602158400  // 12pm UTC, Thursday 8th October 2020
 const LIMIT_PER_PAGE = 100
 
 export default {
@@ -99,19 +111,24 @@ export default {
 
   methods: {
     navigateToDate(d) {
-      let ts
+      let ts_since
+      let ts_to
       if(d === 'all') {
-        ts = -1
+        ts_since = -1
+        ts_to = -1
       } else if(d === 'competition') {
-        ts = COMPETITION_TIMESTAMP
+        ts_since = COMPETITION_START_TIMESTAMP
+        ts_to = COMPETITION_ENDING_TIMESTAMP
       } else {
         const day = 60 * 60 * 24
         const currentTs = Math.floor(Date.now() / 1000)
-        ts = currentTs - d * day
+        ts_since = currentTs - d * day
+        ts_to = -1
       }
       this.$router.replace({path: '/', query: {
         ...this.$route.query,
-          ts,
+          ts_since,
+          ts_to,
           page: 0 } } )
     },
 
@@ -125,13 +142,17 @@ export default {
     },
 
     fetchLeaders() {
-      let since = parseInt(this.$route.query.ts, 10) || COMPETITION_TIMESTAMP
-      if(since < 0) {
-        since = 0  // all time
+      let ts_since = parseInt(this.$route.query.ts_since, 10) || COMPETITION_START_TIMESTAMP
+      let ts_to = parseInt(this.$route.query.ts_to, 10) || COMPETITION_ENDING_TIMESTAMP
+      if(ts_since < 0) {
+        ts_since = 0  // all time
+      }
+      if(ts_to < 0) {
+        ts_to = 0  // to the end of the world
       }
 
       const offset = this.realPage * this.itemsPerPage
-      const url = `/api/v1/leaderboard?offset=${offset}&since=${since}`;
+      const url = `/api/v1/leaderboard?offset=${offset}&since=${ts_since}&to=${ts_to}`;
 
       this.loading = true
       axios
@@ -152,7 +173,7 @@ export default {
   },
 
   watch: {
-    '$route.query.ts'() {
+    '$route.query.ts_since'() {
       this.fetchLeaders();
     },
     '$route.query.page'() {

@@ -7,7 +7,7 @@ from tortoise import fields, exceptions
 from tortoise.functions import Max, Count
 
 from midgard.models.base import IdModel
-from midgard.pool_price import PoolPriceCache
+from midgard.pool_price import PoolPriceCache, PoolPriceFetcher
 
 
 class BEPTransaction(IdModel):
@@ -32,6 +32,10 @@ class BEPTransaction(IdModel):
     output_usd_price = fields.FloatField(default=0.0)
 
     rune_volume = fields.FloatField(default=None, null=True)
+
+    fee = fields.FloatField(default=0.0)
+    slip = fields.FloatField(default=0.0)
+
     block_height = fields.IntField(default=0, null=True)
 
     hash = fields.CharField(255, unique=True)
@@ -73,6 +77,10 @@ class BEPTransaction(IdModel):
             s = tx['status']
             if s == 'Success':
                 if t in (cls.TYPE_DOUBLE_SWAP, cls.TYPE_SWAP):
+
+                    slip = float(tx['events']['slip'])
+                    fee = int(tx['events']['fee']) / cls.DIVIDER
+
                     in_data, out_data = tx['in'], tx['out'][0]
 
                     in_coin = in_data['coins'][0]
@@ -96,6 +104,8 @@ class BEPTransaction(IdModel):
                                output_asset=out_coin['asset'],
                                output_amount=out_amount,
                                output_usd_price=-1.0,
+                               fee=fee,
+                               slip=slip,
                                hash=tx_hash,
                                block_height=int(tx['height']))
         except (LookupError, ValueError) as e:
@@ -187,12 +197,20 @@ class BEPTransaction(IdModel):
     def is_double(self):
         return self.type == self.TYPE_DOUBLE_SWAP
 
-    async def fill_tx_volume_and_usd_prices(self, ppc: 'PoolPriceCache'):
-        _, self.output_usd_price = await ppc.get_historical_price(self.output_asset, self.block_height)
-        dollar_per_rune, self.input_usd_price = await ppc.get_historical_price(self.input_asset, self.block_height)
-        volume = self.input_amount * self.input_usd_price / dollar_per_rune
-        self.rune_volume = volume
+    @property
+    def usd_volume(self):
+        return self.input_usd_price * self.input_amount
+
+    async def fill_tx_volume_and_usd_prices(self, ppc: 'PoolPriceCache', fetcher: PoolPriceFetcher):
+        _, self.output_usd_price = await ppc.get_historical_price(fetcher, self.output_asset, self.block_height)
+        dollar_per_rune, self.input_usd_price = await ppc.get_historical_price(fetcher, self.input_asset, self.block_height)
+
+        self.rune_volume = self.input_amount * self.input_usd_price / dollar_per_rune
         return self
+
+    @classmethod
+    def all_by_date(cls, asc=True):
+        return BEPTransaction.all().order_by('date' if asc else '-date')
 
     @classmethod
     async def clear(cls):

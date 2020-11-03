@@ -38,45 +38,19 @@ class PoolBalance:
         }
 
 
-class PoolPriceCache:
+class PoolPriceFetcher:
     BUSD = 'BNB.BUSD-BD1'
     RUNE_SYMBOL = 'BNB.RUNE-B1A'
 
-    SAVE_THRESHOLD = 20
-
-    CACHE_FILE = '../../data/pool_info_cache.json'
-
     def __init__(self, session=None):
-        self.logger = logging.getLogger('PoolPriceCache')
+        self.logger = logging.getLogger('PoolPriceFetcher')
         self.nodes_ip = []
-        self.price_cache = {}
-        self.file_name = self.CACHE_FILE
         self.session = session or aiohttp.ClientSession()
-        try:
-            self.load()
-        except FileNotFoundError:
-            pass
-        self.counter = 0
 
     async def load_nodes_ip(self):
         self.nodes_ip = await get_thorchain_nodes(self.session)
-        self.logger.info(f'nodes: {self.nodes_ip}')
+        self.logger.info(f'nodes loaded: {self.nodes_ip}')
         assert len(self.nodes_ip) > 1
-
-    async def try_to_save(self, forced=False):
-        self.counter += 1
-        if self.counter >= self.SAVE_THRESHOLD or forced:
-            await asyncio.get_event_loop().run_in_executor(None, self.save)
-            self.counter = 0
-
-    def save(self):
-        with open(self.file_name, 'w') as f:
-            json.dump(self.price_cache, f, indent=4)
-
-    def load(self):
-        with open(self.file_name, 'r') as f:
-            self.price_cache = json.load(f)
-            self.logger.info(f'loaded pool_cache ({len(self.price_cache)} items)')
 
     async def fetch_pool_data(self, asset, height) -> PoolBalance:
         if asset == self.RUNE_SYMBOL:
@@ -95,20 +69,64 @@ class PoolPriceCache:
     async def get_price_in_rune(self, asset, height):
         if asset == self.RUNE_SYMBOL:
             return 1.0
+        asset_pool = await self.fetch_pool_data(asset, height)
+        asset_per_rune = asset_pool.balance_asset / asset_pool.balance_rune
+        return asset_per_rune
+
+    async def get_historical_price(self, asset, height):
+        dollar_per_rune = await self.get_price_in_rune(self.BUSD, height)
+        asset_per_rune = await self.get_price_in_rune(asset, height)
+
+        asset_price_in_usd = dollar_per_rune / asset_per_rune
+
+        return dollar_per_rune, asset_price_in_usd
+
+
+class PoolPriceCache:
+    SAVE_THRESHOLD = 20
+    CACHE_FILE = '../../data/pool_info_cache.json'
+
+    def __init__(self):
+        self.logger = logging.getLogger('PoolPriceCache')
+        self.price_cache = {}
+        self.counter = 0
+        self.file_name = self.CACHE_FILE
+
+    async def try_to_save(self, forced=False):
+        self.counter += 1
+        if self.counter >= self.SAVE_THRESHOLD or forced:
+            await asyncio.get_event_loop().run_in_executor(None, self.save)
+            self.counter = 0
+
+    def save(self):
+        with open(self.file_name, 'w') as f:
+            json.dump(self.price_cache, f, indent=4)
+
+    def load(self):
+        try:
+            with open(self.file_name, 'r') as f:
+                self.price_cache = json.load(f)
+                self.logger.info(f'loaded pool_cache ({len(self.price_cache)} items)')
+        except FileNotFoundError:
+            pass
+
+    async def get_price_in_rune(self, fetcher, asset, height):
+        if asset == PoolPriceFetcher.RUNE_SYMBOL:
+            return 1.0
 
         key = f"{asset}:{height}"
         if key in self.price_cache:
             return self.price_cache[key]
         else:
-            asset_pool = await self.fetch_pool_data(asset, height)
+            asset_pool = await fetcher.fetch_pool_data(asset, height)
             asset_per_rune = asset_pool.balance_asset / asset_pool.balance_rune
             self.price_cache[key] = asset_per_rune
             await self.try_to_save()
             return asset_per_rune
 
-    async def get_historical_price(self, asset, height):
-        dollar_per_rune = await self.get_price_in_rune(self.BUSD, height)
-        asset_per_rune = await self.get_price_in_rune(asset, height)
+    async def get_historical_price(self, fetcher, asset, height):
+        dollar_per_rune = await self.get_price_in_rune(fetcher, fetcher.BUSD, height)
+        asset_per_rune = await self.get_price_in_rune(fetcher, asset, height)
 
         asset_price_in_usd = dollar_per_rune / asset_per_rune
 

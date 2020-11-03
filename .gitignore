@@ -3,6 +3,7 @@
 config.yaml
 db_data
 letsencrypt/
+data/pool_info_cache.json
 
 
 ### OSX ###

@@ -7,21 +7,24 @@ from midgard.models.transaction import BEPTransaction
 
 import logging
 
-from midgard.pool_price import PoolPriceCache
+from midgard.pool_price import PoolPriceCache, PoolPriceFetcher
 
 FILL_VOLUME_BATCH = 100
+
+pool_price_cache = PoolPriceCache()
 
 
 async def fill_rune_volumes():
     number = 0
     async with aiohttp.ClientSession() as session:
-        ppc = PoolPriceCache(session)
+        fetcher = PoolPriceFetcher(session)
+
         while True:
             try:
                 tx = await BEPTransaction.random_tx_without_volume()
                 if not tx:
                     break
-                await tx.fill_tx_volume_and_usd_prices(ppc)
+                await tx.fill_tx_volume_and_usd_prices(pool_price_cache, fetcher)
                 await tx.save()
 
                 number += 1
@@ -44,14 +47,14 @@ async def total_items_in_leaderboard(from_date=0, to_date=0):
 
 
 async def leaderboard(from_date=0, to_date=0, offset=0, limit=10):
-    results = await BEPTransaction\
-        .annotate(total_volume=Sum('rune_volume'), n=Count('id'))\
-        .filter(date__gte=from_date)\
+    results = await BEPTransaction \
+        .annotate(total_volume=Sum('rune_volume'), n=Count('id')) \
+        .filter(date__gte=from_date) \
         .filter(date__lte=to_date) \
         .group_by('input_address') \
         .order_by('-total_volume') \
-        .offset(offset)\
-        .limit(limit)\
+        .offset(offset) \
+        .limit(limit) \
         .values('total_volume', 'input_address', 'date', 'n')
 
     last_dates = await BEPTransaction \
@@ -69,7 +72,7 @@ async def leaderboard(from_date=0, to_date=0, offset=0, limit=10):
 
 async def total_volume(from_date=0, to_date=0):
     try:
-        result = await BEPTransaction.annotate(v=Sum('rune_volume'))\
+        result = await BEPTransaction.annotate(v=Sum('rune_volume')) \
             .filter(date__gte=from_date) \
             .filter(date__lte=to_date) \
             .values('v')

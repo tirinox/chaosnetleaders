@@ -8,6 +8,7 @@ from utils import schedule_task_periodically
 URL_SWAP_GEN = lambda off, n: f"https://chaosnet-midgard.bepswap.com/v1/txs?offset={off}&limit={n}&type=swap,doubleSwap"
 MIDGARD_TX_BATCH = 50
 FETCH_INTERVAL = 60.0
+FILL_INTERVAL = 20.0
 FETCH_FULL_INTERVAL = 60.0 * 60 * 24  # full scan every day
 FETCH_FULL_START_DELAY = 10.0
 
@@ -49,7 +50,7 @@ async def save_transactions(transactions):
     return any_new, saved_list
 
 
-async def fetch_all_transactions(http_session, clear=False, max_items_deep=0):
+async def fetch_all_transactions(http_session, clear=False, max_items_deep=0, start=0):
     logging.info('[FULL SCAN] fetching all transactions.')
     fetcher = Fetcher(URL_SWAP_GEN, http_session)
 
@@ -57,7 +58,7 @@ async def fetch_all_transactions(http_session, clear=False, max_items_deep=0):
         logging.warning("[FULL SCAN] clearing all BEPTransaction-s!")
         await BEPTransaction.all().delete()
 
-    i = 0
+    i = start
     while True:
         if max_items_deep != 0 and i >= max_items_deep:
             break
@@ -68,8 +69,6 @@ async def fetch_all_transactions(http_session, clear=False, max_items_deep=0):
             break
 
         _, saved_transactions = await save_transactions(transactions)
-
-        await fill_rune_volumes()
 
         local_count = await BEPTransaction.all().count()
         logging.info(f'[FULL SCAN] added {len(saved_transactions)} transactions start = {i} of {count}; local db has {local_count} transactions')
@@ -128,11 +127,11 @@ async def fetch_all_absent_transactions(http_session, verify_date=True):
     return new_transactions
 
 
-async def get_more_transactions_periodically(full_scan=False):
+async def get_more_transactions_periodically(full_scan=False, start=0):
     async with aiohttp.ClientSession() as session:
         try:
             if full_scan:
-                await fetch_all_transactions(session, max_items_deep=MAX_TX_TO_FETCH_FULLSCAN)
+                await fetch_all_transactions(session, max_items_deep=MAX_TX_TO_FETCH_FULLSCAN, start=start)
             else:
                 await fetch_all_absent_transactions(session)
         except Exception as e:
@@ -142,4 +141,5 @@ async def get_more_transactions_periodically(full_scan=False):
 async def run_fetcher(*_):
     schedule_task_periodically(FETCH_INTERVAL, get_more_transactions_periodically)
     schedule_task_periodically(FETCH_FULL_INTERVAL, get_more_transactions_periodically, FETCH_FULL_START_DELAY, True)
+    schedule_task_periodically(FILL_INTERVAL, fill_rune_volumes)
 

@@ -1,25 +1,34 @@
+import asyncio
+
+import aiohttp
 from tortoise.functions import Sum, Max, Count
 
 from midgard.models.transaction import BEPTransaction
 
 import logging
 
+from midgard.pool_price import PoolPriceCache
 
 FILL_VOLUME_BATCH = 100
 
 
 async def fill_rune_volumes():
     number = 0
-    while True:
-        txs = await BEPTransaction.without_volume().limit(FILL_VOLUME_BATCH)
-        if not txs:
-            break
+    async with aiohttp.ClientSession() as session:
+        ppc = PoolPriceCache(session)
+        while True:
+            try:
+                tx = await BEPTransaction.random_tx_without_volume()
+                if not tx:
+                    break
+                await tx.fill_tx_volume_and_usd_prices(ppc)
+                await tx.save()
 
-        for tx in txs:
-            await tx.fill_rune_volume()
-            # print(f'{tx} : rune volume = {tx.rune_volume}')
-
-        number += len(txs)
+                number += 1
+                logging.info(f'filled usd data for {tx}. n = {number} filled this session')
+            except:
+                logging.exception('fill_rune_volumes error, I will sleep for a little while')
+                await asyncio.sleep(3.0)
 
     logging.info(f"fill_rune_volumes = {number} items filled")
     return number
@@ -35,12 +44,6 @@ async def total_items_in_leaderboard(from_date=0, to_date=0):
 
 
 async def leaderboard(from_date=0, to_date=0, offset=0, limit=10):
-    # SELECT `input_address` `input_address`,`date` `date`,SUM(`rune_volume`) `total_volume`,COUNT(`id`) `n`
-    # FROM `beptransaction`
-    # WHERE `date`>=1599739200 AND `date`<=1602158400
-    # GROUP BY `input_address`
-    # ORDER BY SUM(`rune_volume`) DESC
-
     results = await BEPTransaction\
         .annotate(total_volume=Sum('rune_volume'), n=Count('id'))\
         .filter(date__gte=from_date)\

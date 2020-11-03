@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import random
+from dataclasses import dataclass
 
 import aiohttp
 
@@ -20,15 +21,35 @@ async def get_thorchain_node_random(session):
     return random.choice(resp) if resp else FALLBACK_THORCHAIN_IP
 
 
+@dataclass
+class PoolBalance:
+    balance_asset: int
+    balance_rune: int
+
+    @classmethod
+    def from_dict(cls, pool_data):
+        return PoolBalance(int(pool_data['balance_asset']), int(pool_data['balance_rune']))
+
+    @property
+    def to_dict(self):
+        return {
+            'balance_asset': self.balance_asset,
+            'balance_rune': self.balance_rune
+        }
+
+
 class PoolPriceCache:
     BUSD = 'BNB.BUSD-BD1'
+    RUNE_SYMBOL = 'BNB.RUNE-B1A'
+
+    SAVE_THRESHOLD = 20
 
     CACHE_FILE = '../../data/pool_info_cache.json'
 
     def __init__(self, session=None):
         self.logger = logging.getLogger('PoolPriceCache')
         self.nodes_ip = []
-        self.pool_cache = {}
+        self.price_cache = {}
         self.file_name = self.CACHE_FILE
         self.session = session or aiohttp.ClientSession()
         try:
@@ -44,20 +65,23 @@ class PoolPriceCache:
 
     async def try_to_save(self, forced=False):
         self.counter += 1
-        if self.counter >= 100 or forced:
+        if self.counter >= self.SAVE_THRESHOLD or forced:
             await asyncio.get_event_loop().run_in_executor(None, self.save)
             self.counter = 0
 
     def save(self):
         with open(self.file_name, 'w') as f:
-            json.dump(self.pool_cache, f, indent=4)
+            json.dump(self.price_cache, f, indent=4)
 
     def load(self):
         with open(self.file_name, 'r') as f:
-            self.pool_cache = json.load(f)
-            print(f'loaded pool_cache ({len(self.pool_cache)} items)')
+            self.price_cache = json.load(f)
+            self.logger.info(f'loaded pool_cache ({len(self.price_cache)} items)')
 
-    async def get_pool_data(self, asset, height):
+    async def fetch_pool_data(self, asset, height) -> PoolBalance:
+        if asset == self.RUNE_SYMBOL:
+            return PoolBalance(1, 1)
+
         if not self.nodes_ip:
             await self.load_nodes_ip()
 
@@ -65,30 +89,27 @@ class PoolPriceCache:
         base_url = THORCHAIN_BASE_URL(ip_addr)
         url = f"{base_url}/thorchain/pool/{asset}?height={height}"
         async with self.session.get(url) as resp:
-            return await resp.json()
+            j = await resp.json()
+            return PoolBalance.from_dict(j)
 
-    async def get_pool(self, asset, block_height):
-        key = f"{asset}-{block_height}"
-        if key in self.pool_cache:
-            return self.pool_cache[key]
+    async def get_price_in_rune(self, asset, height):
+        if asset == self.RUNE_SYMBOL:
+            return 1.0
 
-        pool_data = await self.get_pool_data(asset, block_height)
-        if pool_data:
-            clean_pool_data = {
-                'balance_asset': float(pool_data['balance_asset']),
-                'balance_rune': float(pool_data['balance_rune'])
-            }
-            self.pool_cache[key] = clean_pool_data
-            return clean_pool_data
+        key = f"{asset}:{height}"
+        if key in self.price_cache:
+            return self.price_cache[key]
+        else:
+            asset_pool = await self.fetch_pool_data(asset, height)
+            asset_per_rune = asset_pool.balance_asset / asset_pool.balance_rune
+            self.price_cache[key] = asset_per_rune
+            await self.try_to_save()
+            return asset_per_rune
 
     async def get_historical_price(self, asset, height):
-        asset_pool = await self.get_pool(asset, height)
-        busd_pool = await self.get_pool(self.BUSD, height)
+        dollar_per_rune = await self.get_price_in_rune(self.BUSD, height)
+        asset_per_rune = await self.get_price_in_rune(asset, height)
 
-        await self.try_to_save()
+        asset_price_in_usd = dollar_per_rune / asset_per_rune
 
-        rune_price = float(busd_pool['balance_rune']) / float(busd_pool['balance_asset'])
-        asset_price_in_rune = float(asset_pool['balance_rune']) / float(asset_pool['balance_asset'])
-        asset_price_in_usd = asset_price_in_rune / rune_price
-
-        return rune_price, asset_price_in_usd
+        return dollar_per_rune, asset_price_in_usd

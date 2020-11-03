@@ -10,7 +10,8 @@ MIDGARD_TX_BATCH = 50
 FETCH_INTERVAL = 60.0
 FETCH_FULL_INTERVAL = 60.0 * 60 * 24  # full scan every day
 FETCH_FULL_START_DELAY = 10.0
-MAX_TX_TO_FETCH_FULLSCAN = 2000
+
+MAX_TX_TO_FETCH_FULLSCAN = 0  # full-full!
 
 
 class Fetcher:
@@ -27,7 +28,7 @@ class Fetcher:
             models = []
             txs = json['txs']
             for i, tx in enumerate(txs, start=1):
-                tx_model = BEPTransaction.from_json(tx, order_of_come=i)
+                tx_model = BEPTransaction.from_json(tx)
                 if tx_model is not None:
                     models.append(tx_model)
 
@@ -122,8 +123,6 @@ async def fetch_all_absent_transactions(http_session, verify_date=True):
                 f'added {len(saved_transactions)} transactions start = {i} of {midgard_count}; '
                 f'local db has {local_count} transactions')
 
-        await fill_rune_volumes()
-
         i += MIDGARD_TX_BATCH
 
     return new_transactions
@@ -136,7 +135,6 @@ async def get_more_transactions_periodically(full_scan=False):
                 await fetch_all_transactions(session, max_items_deep=MAX_TX_TO_FETCH_FULLSCAN)
             else:
                 await fetch_all_absent_transactions(session)
-            await fill_rune_volumes()
         except Exception as e:
             logging.error(f"failed task: get_more_transactions_periodically(full_scal={full_scan}), error = {e}")
 

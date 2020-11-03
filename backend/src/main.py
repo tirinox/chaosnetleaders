@@ -11,7 +11,6 @@ from midgard.aggregator import fill_rune_volumes
 from midgard.fetcher import run_fetcher
 from midgard.models.transaction import BEPTransaction
 
-
 PORT = 5000
 
 logging.basicConfig(level=logging.INFO)

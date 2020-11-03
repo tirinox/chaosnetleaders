@@ -6,9 +6,8 @@ import aiohttp
 from dotenv import load_dotenv
 
 from api import COMP_START_TIMESTAMP, COMP_END_TIMESTAMP
-from midgard.fetcher import Fetcher, URL_SWAP_GEN
+from midgard.fetcher import Fetcher, URL_SWAP_GEN, get_more_transactions_periodically
 from midgard.models.transaction import BEPTransaction
-from midgard.pool_price import PoolPriceCache
 
 logging.basicConfig(level=logging.INFO)
 
@@ -73,16 +72,7 @@ class TXCache:
 
 
 async def main():
-    ppc = PoolPriceCache()
-
-    async def tx_handler(txs):
-        for tx in txs:
-            print(tx)
-            # rune_price, asset_price_in_usd = await ppc.get_historical_price(tx.other_asset, tx.block_height)
-
-
-    txc = TXCache(tx_handler)
-    await asyncio.create_task(txc.run())
+    await get_more_transactions_periodically(full_scan=True)
 
 
 if __name__ == '__main__':

@@ -1,5 +1,5 @@
 import asyncio
-
+import names
 import aiohttp
 from tortoise.functions import Sum, Max, Count
 
@@ -16,6 +16,8 @@ pool_price_cache = PoolPriceCache()
 
 async def fill_rune_volumes():
     number = 0
+    name = names.get_full_name()
+    logger = logging.getLogger(name)
     async with aiohttp.ClientSession() as session:
         fetcher = PoolPriceFetcher(session)
 
@@ -28,9 +30,9 @@ async def fill_rune_volumes():
                 await tx.save()
 
                 number += 1
-                logging.info(f'filled usd data for {tx}. n = {number} filled this session')
-            except:
-                logging.exception('fill_rune_volumes error, I will sleep for a little while')
+                logger.info(f'filled usd data for {tx}. n = {number} filled this session')
+            except Exception as e:
+                logger.exception('fill_rune_volumes error, I will sleep for a little while', exc_info=False)
                 await asyncio.sleep(3.0)
 
     logging.info(f"fill_rune_volumes = {number} items filled")
@@ -68,6 +70,10 @@ async def leaderboard(from_date=0, to_date=0, offset=0, limit=10):
         item['date'] = last_dates_cache.get(item['input_address'], item['date'])
 
     return results
+
+
+def sort_leaderboard_by_usd_volume(items: list):
+    return list(sorted(items, key=lambda it: it['input_usd_price'] * it['input_amount']))
 
 
 async def total_volume(from_date=0, to_date=0):

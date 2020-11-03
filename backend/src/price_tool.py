@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 async def main():
     await init_db()
 
-    n_fillers = 2
+    n_fillers = 8
     for i in range(n_fillers):
         schedule_task_periodically(FILL_INTERVAL, fill_rune_volumes)
 

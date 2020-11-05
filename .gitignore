@@ -4,6 +4,7 @@ config.yaml
 db_data
 letsencrypt/
 data/pool_info_cache.json
+data/metrics/all_tx.csv
 
 
 ### OSX ###

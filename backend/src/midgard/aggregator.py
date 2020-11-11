@@ -26,10 +26,12 @@ async def fill_rune_volumes():
         while True:
             try:
                 tx = await BEPTransaction.random_tx_without_volume()
-                if tx.date < DONT_FILL_RUNE_PRICE_BEFORE:
-                    continue
                 if not tx:
                     break
+
+                if tx.date < DONT_FILL_RUNE_PRICE_BEFORE:
+                    continue
+
                 await tx.fill_tx_volume_and_usd_prices(pool_price_cache, fetcher)
                 await tx.save()
 

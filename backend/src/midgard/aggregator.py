@@ -11,6 +11,8 @@ from midgard.pool_price import PoolPriceCache, PoolPriceFetcher
 
 FILL_VOLUME_BATCH = 100
 
+DONT_FILL_RUNE_PRICE_BEFORE = 1598788800  # Sunday, 30-Aug-20 12:00:00 UTC in RFC 2822
+
 pool_price_cache = PoolPriceCache()
 
 
@@ -24,6 +26,8 @@ async def fill_rune_volumes():
         while True:
             try:
                 tx = await BEPTransaction.random_tx_without_volume()
+                if tx.date < DONT_FILL_RUNE_PRICE_BEFORE:
+                    continue
                 if not tx:
                     break
                 await tx.fill_tx_volume_and_usd_prices(pool_price_cache, fetcher)
@@ -32,7 +36,7 @@ async def fill_rune_volumes():
                 number += 1
                 logger.info(f'filled usd data for {tx}. n = {number} filled this session')
             except Exception as e:
-                logger.exception('fill_rune_volumes error, I will sleep for a little while', exc_info=False)
+                logger.exception(f'fill_rune_volumes error, I will sleep for a little while {tx.hash} ({tx})', exc_info=False)
                 await asyncio.sleep(3.0)
 
     logging.info(f"fill_rune_volumes = {number} items filled")

@@ -12,7 +12,7 @@ FILL_INTERVAL = 20.0
 FETCH_FULL_INTERVAL = 60.0 * 60 * 24  # full scan every day
 FETCH_FULL_START_DELAY = 10.0
 
-MAX_TX_TO_FETCH_FULLSCAN = 0  # full-full!
+MAX_TX_TO_FETCH_FULLSCAN = 25000  # full-full! == 0
 
 
 class Fetcher:

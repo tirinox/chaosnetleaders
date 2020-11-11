@@ -5,7 +5,7 @@ db_data
 letsencrypt/
 data/pool_info_cache.json
 data/metrics/all_tx.csv
-
+data/beptransaction-backup.sql
 
 ### OSX ###
 .DS_Store

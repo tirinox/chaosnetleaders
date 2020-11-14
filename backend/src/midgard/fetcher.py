@@ -1,9 +1,10 @@
-import aiohttp
 import logging
-from midgard.models.transaction import BEPTransaction
-from midgard.aggregator import fill_rune_volumes
-from utils import schedule_task_periodically
 
+import aiohttp
+
+from midgard.aggregator import fill_rune_volumes
+from midgard.models.transaction import BEPTransaction
+from utils import schedule_task_periodically
 
 URL_SWAP_GEN = lambda off, n: f"https://chaosnet-midgard.bepswap.com/v1/txs?offset={off}&limit={n}&type=swap,doubleSwap"
 MIDGARD_TX_BATCH = 50
@@ -71,7 +72,8 @@ async def fetch_all_transactions(http_session, clear=False, max_items_deep=0, st
         _, saved_transactions = await save_transactions(transactions)
 
         local_count = await BEPTransaction.all().count()
-        logging.info(f'[FULL SCAN] added {len(saved_transactions)} transactions start = {i} of {count}; local db has {local_count} transactions')
+        logging.info(
+            f'[FULL SCAN] added {len(saved_transactions)} transactions start = {i} of {count}; local db has {local_count} transactions')
 
         i += MIDGARD_TX_BATCH
 
@@ -135,11 +137,10 @@ async def get_more_transactions_periodically(full_scan=False, start=0):
             else:
                 await fetch_all_absent_transactions(session)
         except Exception as e:
-            logging.error(f"failed task: get_more_transactions_periodically(full_scal={full_scan}), error = {e}")
+            logging.exception(f"failed task: get_more_transactions_periodically(full_scal={full_scan}), error = {e}")
 
 
 async def run_fetcher(*_):
     schedule_task_periodically(FETCH_INTERVAL, get_more_transactions_periodically)
     schedule_task_periodically(FETCH_FULL_INTERVAL, get_more_transactions_periodically, FETCH_FULL_START_DELAY, True)
     schedule_task_periodically(FILL_INTERVAL, fill_rune_volumes)
-

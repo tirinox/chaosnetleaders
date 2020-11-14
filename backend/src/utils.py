@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import time
 from functools import wraps
 
@@ -18,7 +19,10 @@ async def run_periodically(wait_time, func, _delay=0, *args):
     if _delay > 0:
         await asyncio.sleep(_delay)
     while True:
-        await func(*args)
+        try:
+            await func(*args)
+        except:
+            logging.exception(f"ERROR in run_periodically with {func}:")
         await asyncio.sleep(wait_time)
 
 

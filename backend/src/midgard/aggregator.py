@@ -70,7 +70,7 @@ async def leaderboard_raw(from_date=0, to_date=0, offset=0, limit=10, currency='
          f"FROM `beptransaction` "
          f"WHERE `date` >= {int(from_date)} AND `date` <= {int(to_date)} {usd_filled_condition} "
          f"GROUP BY `input_address` "
-         f"ORDER BY SUM(`rune_volume`) "
+         f"ORDER BY SUM({sum_variable}) "
          f"DESC LIMIT {int(limit)} OFFSET {int(offset)}")
 
     conn = Tortoise.get_connection("default")

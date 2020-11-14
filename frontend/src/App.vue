@@ -13,7 +13,19 @@
           <b-nav-item to="/" :active="$route.path === '/'">Leaderboard</b-nav-item>
           <b-nav-item to="/help" :active="$route.path === '/help'">Help</b-nav-item>
         </b-navbar-nav>
+
+        <b-nav-form class="ml-4">
+          <b-form-radio-group
+            button-variant="success"
+            v-model="selected"
+            :options="currencyOptions"
+            name="buttons-1"
+            buttons
+            @change="on_currency_switch"
+          ></b-form-radio-group>
+        </b-nav-form>
       </b-collapse>
+
     </b-navbar>
 
     <div class="container">
@@ -30,19 +42,43 @@
 
 <script>
 
+import { ON_CURRENCY_CHANGE, EventBus } from '@/lib/bus'
+
 export default {
   name: 'App',
+  data () {
+    return {
+      selected: 'rune'
+    }
+  },
+  methods: {
+    on_currency_switch(v) {
+      EventBus.$emit(ON_CURRENCY_CHANGE, v)
+    }
+  },
   computed: {
-    packageJson() {
-      return '0.1.3'
+    currencyOptions () {
+      return [
+        {
+          text: 'RUNE',
+          value: 'rune',
+        },
+        {
+          text: 'USD',
+          value: 'usd',
+        }
+      ]
+    },
+    packageJson () {
+      return '0.2.0'
     }
   }
 }
 </script>
 
 <style>
-  .footer {
-    padding: 5px;
-  }
+.footer {
+  padding: 5px;
+}
 
 </style>

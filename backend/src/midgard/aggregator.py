@@ -1,12 +1,12 @@
 import asyncio
-import names
-import aiohttp
-from tortoise.functions import Sum, Max, Count
-
-from midgard.models.transaction import BEPTransaction
-
 import logging
 
+import aiohttp
+import names
+from tortoise import Tortoise
+from tortoise.functions import Max, Count
+
+from midgard.models.transaction import BEPTransaction
 from midgard.pool_price import PoolPriceCache, PoolPriceFetcher
 
 FILL_VOLUME_BATCH = 100
@@ -38,7 +38,8 @@ async def fill_rune_volumes():
                 number += 1
                 logger.info(f'filled usd data for {tx}. n = {number} filled this session')
             except Exception as e:
-                logger.exception(f'fill_rune_volumes error, I will sleep for a little while {tx.hash} ({tx})', exc_info=False)
+                logger.exception(f'fill_rune_volumes error, I will sleep for a little while {tx.hash} ({tx})',
+                                 exc_info=False)
                 await asyncio.sleep(3.0)
 
     logging.info(f"fill_rune_volumes = {number} items filled")
@@ -54,16 +55,30 @@ async def total_items_in_leaderboard(from_date=0, to_date=0):
     return r[0]['total_addresses']
 
 
-async def leaderboard(from_date=0, to_date=0, offset=0, limit=10):
-    results = await BEPTransaction \
-        .annotate(total_volume=Sum('rune_volume'), n=Count('id')) \
-        .filter(date__gte=from_date) \
-        .filter(date__lte=to_date) \
-        .group_by('input_address') \
-        .order_by('-total_volume') \
-        .offset(offset) \
-        .limit(limit) \
-        .values('total_volume', 'input_address', 'date', 'n')
+async def leaderboard_raw(from_date=0, to_date=0, offset=0, limit=10, currency='rune'):
+    if currency == 'rune':
+        sum_variable = "`rune_volume`"
+        usd_filled_condition = ''
+    else:
+        sum_variable = "`input_amount` * `input_usd_price`"
+        usd_filled_condition = ' AND `input_usd_price` > 0 '
+
+    q = (f"SELECT "
+         f"`input_address` `input_address`,"
+         f"SUM({sum_variable}) `total_volume`, MAX(`date`) as `date`,"
+         f"COUNT(`id`) `n` "
+         f"FROM `beptransaction` "
+         f"WHERE `date` >= {int(from_date)} AND `date` <= {int(to_date)} {usd_filled_condition} "
+         f"GROUP BY `input_address` "
+         f"ORDER BY SUM(`rune_volume`) "
+         f"DESC LIMIT {int(limit)} OFFSET {int(offset)}")
+
+    conn = Tortoise.get_connection("default")
+    return await conn.execute_query_dict(q)
+
+
+async def leaderboard(from_date=0, to_date=0, offset=0, limit=10, currency='rune'):
+    results = await leaderboard_raw(from_date, to_date, offset, limit, currency)
 
     last_dates = await BEPTransaction \
         .annotate(last_date=Max('date')) \
@@ -78,16 +93,21 @@ async def leaderboard(from_date=0, to_date=0, offset=0, limit=10):
     return results
 
 
-def sort_leaderboard_by_usd_volume(items: list):
-    return list(sorted(items, key=lambda it: it['input_usd_price'] * it['input_amount']))
-
-
-async def total_volume(from_date=0, to_date=0):
+async def total_volume(from_date=0, to_date=0, currency='rune'):
     try:
-        result = await BEPTransaction.annotate(v=Sum('rune_volume')) \
-            .filter(date__gte=from_date) \
-            .filter(date__lte=to_date) \
-            .values('v')
+        if currency == 'rune':
+            sum_variable = "`rune_volume`"
+            usd_filled_condition = ''
+        else:
+            sum_variable = "`input_amount` * `input_usd_price`"
+            usd_filled_condition = ' AND `input_usd_price` > 0 '
+
+        sql = (f"SELECT SUM({sum_variable}) `v` FROM `beptransaction` "
+               f"WHERE `date` >= {int(from_date)} AND `date` <= {int(to_date)} {usd_filled_condition}")
+
+        conn = Tortoise.get_connection("default")
+        result = await conn.execute_query_dict(sql)
+
         return float(result[0]['v'])
     except (TypeError, LookupError):
         return 0

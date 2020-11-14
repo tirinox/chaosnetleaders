@@ -1,4 +1,5 @@
 import asyncio
+import time
 from functools import wraps
 
 from aiohttp import web
@@ -59,4 +60,23 @@ def error_guard(func):
             return await func(*args, **kwargs)
         except Exception as e:
             return error_json(str(e))
+
     return wrapped
+
+
+def a_result_cached(ttl=60):
+    def decorator(func):
+        last_update_ts = -1.0
+        last_result = None
+
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            nonlocal last_result, last_update_ts
+            if last_update_ts < 0 or time.monotonic() - ttl > last_update_ts:
+                last_result = await func(*args, **kwargs)
+                last_update_ts = time.monotonic()
+            return last_result
+
+        return wrapper
+
+    return decorator

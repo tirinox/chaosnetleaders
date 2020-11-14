@@ -15,6 +15,10 @@ async def handler_leaderboard(request):
     start_timestamp = int(request.rel_url.query.get('since') or COMP_START_TIMESTAMP)
     final_timestamp = int(request.rel_url.query.get('to') or COMP_END_TIMESTAMP)
 
+    currency = request.rel_url.query.get('currency')
+    if currency not in ('rune', 'usd'):
+        currency = 'rune'
+
     if final_timestamp <= 0:
         final_timestamp = MAX_TS
 
@@ -23,8 +27,8 @@ async def handler_leaderboard(request):
 
     limit = min(limit, BOARD_LIMIT)
 
-    lb = await leaderboard(start_timestamp, final_timestamp, offset, limit)
-    tv = await total_volume(from_date=start_timestamp, to_date=final_timestamp)
+    lb = await leaderboard(start_timestamp, final_timestamp, offset, limit, currency)
+    tv = await total_volume(from_date=start_timestamp, to_date=final_timestamp, currency=currency)
     pt = await total_items_in_leaderboard(from_date=start_timestamp, to_date=final_timestamp)
 
     return web.json_response({
@@ -34,5 +38,6 @@ async def handler_leaderboard(request):
         'limit': limit,
         'chaosnet_volume': tv,
         'participants': pt,
-        'offset': offset
+        'offset': offset,
+        'currency': currency,
     })

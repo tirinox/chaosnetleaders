@@ -46,6 +46,11 @@
         ᚱ volume = (This Input or Output asset volume) / (Prev Swap ᚱ price)
       </pre>
       <h3>Change log</h3>
+      <h4>v. 0.2.1</h4>
+      <ul>
+        <li>Button style change</li>
+        <li>Default mode: Last week</li>
+      </ul>
       <h4>v. 0.2.0</h4>
       <ul>
         <li>New algorithm for calculating asset prices</li>

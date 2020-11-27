@@ -18,13 +18,15 @@
       </p>
 
       <div>
-        <b-button-group size="sm" class="mb-2">
-          <b-button variant="warning" v-on:click="navigateToDate('competition')">Competition</b-button>
-          <b-button variant="primary" v-on:click="navigateToDate('all')">All time</b-button>
-          <b-button variant="success" v-on:click="navigateToDate(30)">Last month</b-button>
-          <b-button variant="primary" v-on:click="navigateToDate(7)">Last week</b-button>
-          <b-button variant="success" v-on:click="navigateToDate(1)">Last day</b-button>
-        </b-button-group>
+          <b-button variant="link" v-on:click="navigateToDate('competition')">Competition</b-button>
+          ×
+          <b-button variant="link" v-on:click="navigateToDate('all')">All time</b-button>
+          ×
+          <b-button variant="link" v-on:click="navigateToDate(30)">Last month</b-button>
+          ×
+          <b-button variant="link" v-on:click="navigateToDate(7)">Last week</b-button>
+          ×
+          <b-button variant="link" v-on:click="navigateToDate(1)">Last day</b-button>
       </div>
 
       <table class="table table-striped">
@@ -93,6 +95,12 @@ const COMPETITION_START_TIMESTAMP = 1599739200  // 12pm UTC, Thursday 10th Septe
 const COMPETITION_ENDING_TIMESTAMP = 1602158400  // 12pm UTC, Thursday 8th October 2020
 const LIMIT_PER_PAGE = 100
 
+function daysAgo (d) {
+  const day = 60 * 60 * 24
+  const currentTs = Math.floor(Date.now() / 1000)
+  return currentTs - day * d
+}
+
 export default {
   name: 'LeaderboardComponent',
   data () {
@@ -112,14 +120,16 @@ export default {
       return this.$route.query.currency || 'rune'
     },
     ts_since () {
-      return parseInt(this.$route.query.ts_since, 10) || COMPETITION_START_TIMESTAMP
+      return parseInt(this.$route.query.ts_since, 10) || daysAgo(7)  // 1 week by default
     },
     ts_to () {
-      return parseInt(this.$route.query.ts_to, 10) || COMPETITION_ENDING_TIMESTAMP
+      return parseInt(this.$route.query.ts_to, 10) || -1
     },
+
   },
 
   methods: {
+
     navigateToDate (d) {
       let ts_since
       let ts_to
@@ -130,9 +140,7 @@ export default {
         ts_since = COMPETITION_START_TIMESTAMP
         ts_to = COMPETITION_ENDING_TIMESTAMP
       } else {
-        const day = 60 * 60 * 24
-        const currentTs = Math.floor(Date.now() / 1000)
-        ts_since = currentTs - d * day
+        ts_since = daysAgo(d)
         ts_to = -1
       }
 
@@ -143,13 +151,14 @@ export default {
       })
     },
 
-    updatePath(params) {
+    updatePath (params) {
       this.$router.replace({
         path: '/', query: {
           ...this.$route.query,
           ...params,
         }
-      }).catch(() => {})
+      }).catch(() => {
+      })
     },
 
     getPaginatedIndex (index) {
@@ -181,7 +190,7 @@ export default {
         .finally(() => (this.loading = false))
     },
 
-    parseLb(response) {
+    parseLb (response) {
       this.data = response.data
     }
   },
@@ -194,8 +203,8 @@ export default {
     },
     nicePercentFormat,
     shortAddress,
-    addCurrency(data, curr) {
-      if(curr === 'rune') {
+    addCurrency (data, curr) {
+      if (curr === 'rune') {
         return data + ' ᚱ'
       } else {
         return '$ ' + data

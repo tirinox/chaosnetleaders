@@ -38,4 +38,8 @@ upgrade:
 	@make -s start
 
 dbcli:
-	@docker-compose -f "${DOCKER_COMPOSE_FILE}" exec db mysql -p${MYSQL_ROOT_PASSWORD} thorchain
+	@docker-compose -f "${DOCKER_COMPOSE_FILE}" exec db mysql -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE}
+
+mytop:
+	@mytop -u ${MYSQL_USER} -p${MYSQL_PASSWORD} -h 172.18.0.2 -d ${MYSQL_DATABASE}
+

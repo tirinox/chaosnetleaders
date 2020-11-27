@@ -41,6 +41,8 @@ async def fill_rune_volumes():
                 logger.exception(f'fill_rune_volumes error, I will sleep for a little while {tx.hash} ({tx})',
                                  exc_info=False)
                 await asyncio.sleep(3.0)
+            else:
+                await asyncio.sleep(10.0)
 
     logging.info(f"fill_rune_volumes = {number} items filled")
     return number

@@ -23,20 +23,26 @@ async def fill_rune_volumes():
     async with aiohttp.ClientSession() as session:
         fetcher = PoolPriceFetcher(session)
 
+        n_passed = 0
+        n_passed_limit = 100
         while True:
             try:
-                tx = await BEPTransaction.random_tx_without_volume()
+                tx, n = await BEPTransaction.random_tx_without_volume()
                 if not tx:
                     break
 
                 if tx.date < DONT_FILL_RUNE_PRICE_BEFORE:
-                    continue
+                    n_passed += 1
+                    if n_passed < n_passed_limit and n >= 2:
+                        continue
+                    else:
+                        break
 
                 await tx.fill_tx_volume_and_usd_prices(pool_price_cache, fetcher)
                 await tx.save()
 
                 number += 1
-                logger.info(f'filled usd data for {tx} ({tx.rune_volume:.1f} R). n = {number} filled this session')
+                logger.info(f'filled usd data for {tx.id} ({tx.rune_volume:.1f} R). {number}/{n}')
             except Exception as e:
                 logger.exception(f'fill_rune_volumes error, I will sleep for a little while {tx.hash} ({tx})',
                                  exc_info=False)

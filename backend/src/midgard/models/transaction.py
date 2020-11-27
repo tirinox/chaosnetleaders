@@ -188,10 +188,10 @@ class BEPTransaction(IdModel):
     async def random_tx_without_volume(cls):
         n = await cls.n_without_volume()
         if n == 0:
-            return None
+            return None, 0
         i = randint(0, n - 1)
         tx = await cls.without_volume().offset(i).limit(1).first()
-        return tx
+        return tx, n
 
     @property
     def is_double(self):

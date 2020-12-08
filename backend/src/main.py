@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from tortoise import Tortoise
 
 from api import handler_leaderboard
-from midgard.aggregator import fill_rune_volumes
+from midgard.value_filler import ValueFiller
 from midgard.fetcher import run_fetcher
 from midgard.models.transaction import BEPTransaction
 
@@ -48,7 +48,8 @@ async def run_command():
         await BEPTransaction.clear_rune_volume()
     elif command == 'calc-rune-volumes':
         print('calc-rune-volumes command is executing...')
-        await fill_rune_volumes()
+        vf = ValueFiller()
+        await vf.run()
     else:
         logging.error(f'unknown command {command}\n'
                       f'available commands are\n'

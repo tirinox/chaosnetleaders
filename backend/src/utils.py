@@ -84,3 +84,13 @@ def a_result_cached(ttl=60):
         return wrapper
 
     return decorator
+
+
+def progressbar(x, total, symbol_width=10):
+    if total <= 0:
+        s = 0
+    else:
+        s = int(round(symbol_width * x / total))
+    s = max(0, s)
+    s = min(symbol_width, s)
+    return '▰' * s + '▱' * (symbol_width - s)

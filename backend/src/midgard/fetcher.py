@@ -2,7 +2,7 @@ import logging
 
 import aiohttp
 
-from midgard.aggregator import fill_rune_volumes
+from midgard.value_filler import ValueFiller
 from midgard.models.transaction import BEPTransaction
 from utils import schedule_task_periodically
 
@@ -143,4 +143,8 @@ async def get_more_transactions_periodically(full_scan=False, start=0):
 async def run_fetcher(*_):
     schedule_task_periodically(FETCH_INTERVAL, get_more_transactions_periodically)
     schedule_task_periodically(FETCH_FULL_INTERVAL, get_more_transactions_periodically, FETCH_FULL_START_DELAY, True)
-    schedule_task_periodically(FILL_INTERVAL, fill_rune_volumes)
+
+    async def filler():
+        await ValueFiller(n_workers=4).run(interval=-1, blocking=True)
+
+    schedule_task_periodically(FILL_INTERVAL, filler)

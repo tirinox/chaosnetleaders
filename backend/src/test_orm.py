@@ -5,9 +5,9 @@ import time
 
 from dotenv import load_dotenv
 from tortoise import Tortoise
-from tortoise.functions import Sum, Count
+from tortoise.functions import Sum
 
-from midgard.aggregator import fill_rune_volumes, leaderboard_raw, total_volume
+from midgard.aggregator import leaderboard_raw, total_volume
 from midgard.models.transaction import BEPTransaction
 from utils import schedule_task_periodically
 
@@ -53,9 +53,6 @@ async def amain():
     })
     await Tortoise.generate_schemas()
 
-    # await fill_rune_volumes()
-
-    # await get_sql_lb()
     await get_tot_vol()
 
 

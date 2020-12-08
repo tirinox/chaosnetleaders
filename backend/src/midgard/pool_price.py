@@ -45,7 +45,7 @@ class PoolPriceFetcher:
     def __init__(self, session=None):
         self.logger = logging.getLogger('PoolPriceFetcher')
         self.nodes_ip = []
-        self.session = session or aiohttp.ClientSession()
+        self.session = session
 
     async def load_nodes_ip(self):
         self.nodes_ip = await get_thorchain_nodes(self.session)

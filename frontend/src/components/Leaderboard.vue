@@ -19,13 +19,13 @@
 
       <div>
           <b-button variant="link" v-on:click="navigateToDate('competition')">Competition</b-button>
-          ×
+          |
           <b-button variant="link" v-on:click="navigateToDate('all')">All time</b-button>
-          ×
+          |
           <b-button variant="link" v-on:click="navigateToDate(30)">Last month</b-button>
-          ×
+          |
           <b-button variant="link" v-on:click="navigateToDate(7)">Last week</b-button>
-          ×
+          |
           <b-button variant="link" v-on:click="navigateToDate(1)">Last day</b-button>
       </div>
 

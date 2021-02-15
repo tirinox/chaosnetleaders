@@ -16,5 +16,5 @@ async def main():
 
 
 if __name__ == '__main__':
-    load_dotenv('../../.env')
+    load_dotenv('../../../.env')
     asyncio.run(main())

@@ -4,11 +4,34 @@ import logging
 import random
 from dataclasses import dataclass
 
-import aiohttp
+
+BUSD_SYMBOL = 'BNB.BUSD-BD1'
+
+RUNE_SYMBOL_BNB = 'BNB.RUNE-B1A'
+RUNE_SYMBOL_ERC20 = '???'  # fixme
+RUNE_SYMBOL_NATIVE = 'THOR.RUNE'
+RUNE_SYMBOL = RUNE_SYMBOL_BNB
+RUNE_SYMBOLS = (
+    RUNE_SYMBOL_BNB,
+    RUNE_SYMBOL_NATIVE
+)
+
+
+def is_rune(symbol):
+    return symbol in RUNE_SYMBOLS
+
 
 FALLBACK_THORCHAIN_IP = '3.131.115.233'
+
+# fixme:
+#  1. find seed URL for testnet
+#  2. put it to the config
+#  3.
 THORCHAIN_SEED_URL = 'https://chaosnet-seed.thorchain.info/'  # all addresses
 THORCHAIN_BASE_URL = lambda ip: f'http://{ip if ip else FALLBACK_THORCHAIN_IP}:1317'
+
+
+# https://testnet.multichain.midgard.thorchain.info/v2/thorchain/lastblock
 
 
 async def get_thorchain_nodes(session):
@@ -39,8 +62,6 @@ class PoolBalance:
 
 
 class PoolPriceFetcher:
-    BUSD = 'BNB.BUSD-BD1'
-    RUNE_SYMBOL = 'BNB.RUNE-B1A'
 
     def __init__(self, session=None):
         self.logger = logging.getLogger('PoolPriceFetcher')
@@ -53,7 +74,7 @@ class PoolPriceFetcher:
         assert len(self.nodes_ip) > 1
 
     async def fetch_pool_data(self, asset, height) -> PoolBalance:
-        if asset == self.RUNE_SYMBOL:
+        if is_rune(asset):
             return PoolBalance(1, 1)
 
         if not self.nodes_ip:
@@ -67,14 +88,14 @@ class PoolPriceFetcher:
             return PoolBalance.from_dict(j)
 
     async def get_price_in_rune(self, asset, height):
-        if asset == self.RUNE_SYMBOL:
+        if is_rune(asset):
             return 1.0
         asset_pool = await self.fetch_pool_data(asset, height)
         asset_per_rune = asset_pool.balance_asset / asset_pool.balance_rune
         return asset_per_rune
 
     async def get_historical_price(self, asset, height):
-        dollar_per_rune = await self.get_price_in_rune(self.BUSD, height)
+        dollar_per_rune = await self.get_price_in_rune(BUSD_SYMBOL, height)
         asset_per_rune = await self.get_price_in_rune(asset, height)
 
         asset_price_in_usd = dollar_per_rune / asset_per_rune
@@ -111,7 +132,7 @@ class PoolPriceCache:
             pass
 
     async def get_price_in_rune(self, fetcher, asset, height):
-        if asset == PoolPriceFetcher.RUNE_SYMBOL:
+        if is_rune(asset):
             return 1.0
 
         key = f"{asset}:{height}"
@@ -125,7 +146,7 @@ class PoolPriceCache:
             return asset_per_rune
 
     async def get_historical_price(self, fetcher, asset, height):
-        dollar_per_rune = await self.get_price_in_rune(fetcher, fetcher.BUSD, height)
+        dollar_per_rune = await self.get_price_in_rune(fetcher, fetcher.BUSD_SYMBOL, height)
         asset_per_rune = await self.get_price_in_rune(fetcher, asset, height)
 
         asset_price_in_usd = dollar_per_rune / asset_per_rune

@@ -1,7 +1,7 @@
 from tortoise import Tortoise
 from tortoise.functions import Max, Count
 
-from midgard.models.transaction import BEPTransaction
+from models.transaction import BEPTransaction
 
 
 async def total_items_in_leaderboard(from_date=0, to_date=0):

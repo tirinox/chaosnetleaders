@@ -3,8 +3,8 @@ import logging
 import aiohttp
 
 from midgard.value_filler import ValueFiller
-from midgard.models.transaction import BEPTransaction
-from utils import schedule_task_periodically
+from models.transaction import BEPTransaction
+from helpers.utils import schedule_task_periodically
 
 URL_SWAP_GEN = lambda off, n: f"https://chaosnet-midgard.bepswap.com/v1/txs?offset={off}&limit={n}&type=swap,doubleSwap"
 MIDGARD_TX_BATCH = 50

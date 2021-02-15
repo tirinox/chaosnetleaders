@@ -27,13 +27,15 @@ services:
     restart: on-failure
 
   db:
-    image: mysql:5.7
-    volumes:
-      - ./db_data:/var/lib/mysql
-    ports:
-      - "3306:3306"
+    image: "postgres:latest"
     restart: always
+    ports:
+      - 54320:5432
     env_file: .env
+    volumes:
+      - ./db_data:/var/lib/postgresql/data/chaos
+    environment:
+      PGDATA: /var/lib/postgresql/data/chaos/
 
   nginx:
     image: nginx:alpine

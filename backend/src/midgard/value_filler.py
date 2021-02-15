@@ -4,9 +4,9 @@ import logging
 import aiohttp
 import names
 
-from midgard.models.transaction import BEPTransaction
+from models.transaction import BEPTransaction
 from midgard.pool_price import PoolPriceCache, PoolPriceFetcher
-from utils import schedule_task_periodically, progressbar
+from helpers.utils import schedule_task_periodically, progressbar
 
 
 class ValueFiller:

@@ -1,3 +1,4 @@
+
 import datetime
 import logging
 from hashlib import sha256
@@ -7,11 +8,11 @@ from tortoise import fields, exceptions
 from tortoise.functions import Max, Count
 
 from midgard.models.base import IdModel
-from midgard.pool_price import PoolPriceCache, PoolPriceFetcher
+from midgard.pool_price import PoolPriceCache, PoolPriceFetcher, RUNE_SYMBOL_NATIVE, is_rune
 
 
 class BEPTransaction(IdModel):
-    RUNE_SYMBOL = 'BNB.RUNE-B1A'
+
     DIVIDER = 100_000_000.0
 
     TYPE_SWAP = 'swap'
@@ -41,7 +42,8 @@ class BEPTransaction(IdModel):
     hash = fields.CharField(255, unique=True)
 
     def __str__(self):
-        return f"{self.type} @ {datetime.datetime.fromtimestamp(self.date)}(#{self.id}: {self.input_amount} {self.input_asset} -> {self.output_amount} {self.output_asset})"
+        return f"{self.type} @ {datetime.datetime.fromtimestamp(self.date)}(#{self.id}: " \
+               f"{self.input_amount} {self.input_asset} -> {self.output_amount} {self.output_asset})"
 
     def __repr__(self) -> str:
         return super().__str__()
@@ -68,7 +70,7 @@ class BEPTransaction(IdModel):
 
     @property
     def other_asset(self):
-        return self.input_asset if self.output_address == self.RUNE_SYMBOL else self.output_address
+        return self.input_asset if self.output_address == RUNE_SYMBOL_NATIVE else self.output_address
 
     @classmethod
     def from_json(cls, tx):
@@ -124,9 +126,9 @@ class BEPTransaction(IdModel):
             return False
 
     def _get_price_rune(self):
-        if self.input_asset == self.RUNE_SYMBOL:
+        if is_rune(self.input_asset):
             return self.input_amount / self.output_amount
-        elif self.output_asset == self.RUNE_SYMBOL:
+        elif is_rune(self.output_asset):
             return self.output_amount / self.input_amount
 
     @classmethod
@@ -146,7 +148,7 @@ class BEPTransaction(IdModel):
     async def calculate_rune_volume(self):
         if self.type == self.TYPE_SWAP:
             # simple
-            return self.input_amount if self.input_asset == self.RUNE_SYMBOL else self.output_amount
+            return self.input_amount if self.input_asset == RUNE_SYMBOL_NATIVE else self.output_amount
         else:
             # double
             input_price, input_date = await self.get_best_rune_price(self.input_asset, self.date)

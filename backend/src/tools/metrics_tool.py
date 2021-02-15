@@ -11,7 +11,7 @@ from tqdm.asyncio import tqdm
 
 from api import COMP_END_TIMESTAMP, COMP_START_TIMESTAMP
 from main import init_db
-from midgard.models.transaction import BEPTransaction
+from models.transaction import BEPTransaction
 
 logging.basicConfig(level=logging.INFO)
 
@@ -218,5 +218,5 @@ async def main():
 
 
 if __name__ == '__main__':
-    load_dotenv('../../.env')
+    load_dotenv('../../../.env')
     asyncio.run(main())

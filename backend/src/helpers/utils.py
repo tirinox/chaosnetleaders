@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import logging
 import time
 from functools import wraps
@@ -94,3 +95,10 @@ def progressbar(x, total, symbol_width=10):
     s = max(0, s)
     s = min(symbol_width, s)
     return '▰' * s + '▱' * (symbol_width - s)
+
+
+def simple_hash(items):
+    hasher = hashlib.new('sha1')
+    for item in items:
+        hasher.update(item)
+    return hasher.hexdigest()

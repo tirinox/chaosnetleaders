@@ -2,7 +2,7 @@ import logging
 
 import aiohttp
 
-from midgard.value_filler import ValueFiller
+from _old.value_filler import ValueFiller
 from models.transaction import BEPTransaction
 from helpers.utils import schedule_task_periodically
 

@@ -4,7 +4,7 @@ import logging
 from dotenv import load_dotenv
 
 from main import init_db
-from midgard.value_filler import ValueFiller
+from _old.value_filler import ValueFiller
 
 logging.basicConfig(level=logging.INFO)
 

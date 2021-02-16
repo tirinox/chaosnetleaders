@@ -5,7 +5,7 @@ from aiohttp import web
 from dotenv import load_dotenv
 
 from api import handler_leaderboard
-from midgard.fetcher import run_fetcher
+from _old.fetcher import run_fetcher
 
 PORT = 5000
 

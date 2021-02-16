@@ -5,7 +5,7 @@ import aiohttp
 import names
 
 from models.transaction import BEPTransaction
-from midgard.pool_price import PoolPriceCache, PoolPriceFetcher
+from _old.pool_price import PoolPriceCache, PoolPriceFetcher
 from helpers.utils import schedule_task_periodically, progressbar
 
 

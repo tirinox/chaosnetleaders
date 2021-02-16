@@ -9,9 +9,8 @@ import pandas as pd
 from dotenv import load_dotenv
 from tqdm.asyncio import tqdm
 
-from api import COMP_END_TIMESTAMP, COMP_START_TIMESTAMP
 from main import init_db
-from models.transaction import BEPTransaction
+from models.tx import ThorTx
 
 logging.basicConfig(level=logging.INFO)
 
@@ -43,8 +42,8 @@ class PoolMetric:
     n_swaps: int = 0
     n_double_swaps: int = 0
 
-    def update(self, tx: BEPTransaction):
-        self.name = tx.pool
+    def update(self, tx: ThorTx):
+        self.name = tx.pool1
         self.n_tx += 1
         if tx.is_double:
             self.n_double_swaps += 1
@@ -82,16 +81,16 @@ async def export_tx_csv(outfile):
             'fee',
             'slip',
         ])
-        n = await BEPTransaction.all_by_date().count()
+        n = await ThorTx.all_by_date().count()
         print(f'export_tx_csv n = {n}')
         with tqdm(total=n) as pbar:
-            async for tx in BEPTransaction.all():
+            async for tx in ThorTx.all():
                 if tx.rune_volume is not None:
                     writer.writerow([
                         tx.type,
                         tx.date,
                         tx.block_height,
-                        tx.pool,
+                        tx.pool1,
                         tx.input_address,
                         tx.input_asset,
                         tx.input_amount,
@@ -114,9 +113,9 @@ async def export_tx_csv(outfile):
 async def write_pool_data(outfile):
     pools = defaultdict(PoolMetric)
 
-    async for tx in BEPTransaction.all():
+    async for tx in ThorTx.all():
         if tx.rune_volume is not None:
-            pools[tx.pool].update(tx)
+            pools[tx.pool1].update(tx)
             pools['all'].update(tx)
 
     with open(outfile, mode='w') as f:
@@ -133,7 +132,7 @@ def save_csv(name, df: pd.DataFrame):
 
 
 def tx_only_for_comp(df: pd.DataFrame):
-    return df[df['date'].between(COMP_START_TIMESTAMP, COMP_END_TIMESTAMP)]
+    return df[df['date'].between(0, 1000000000000)]  # fixme next time
 
 
 def add_rank(lb, by):
@@ -184,8 +183,8 @@ def process_pool(pool_name, df: pd.DataFrame):
         **get_stat_for(df, 'usd_volume'),
         **get_stat_for(df, 'fee'),
         **get_stat_for(df, 'slip'),
-        'r_swaps': len(df[df["type"] == BEPTransaction.TYPE_SWAP]) / n,
-        'r_double_swaps': len(df[df["type"] == BEPTransaction.TYPE_DOUBLE_SWAP]) / n,
+        'r_swaps': len(df[df["type"] == ThorTx.TYPE_SWAP]) / n,
+        'r_double_swaps': len(df[df["type"] == ThorTx.TYPE_DOUBLE_SWAP]) / n,
     }
     return full_d
 

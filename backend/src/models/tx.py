@@ -1,26 +1,38 @@
-
 import datetime
 import logging
 from hashlib import sha256
 from random import randint
 
-from tortoise import fields, exceptions
+from tortoise import fields, exceptions, Model
 from tortoise.functions import Max, Count
 
-from midgard.models.base import IdModel
-from midgard.pool_price import PoolPriceCache, PoolPriceFetcher, RUNE_SYMBOL_NATIVE, is_rune
+from _old.pool_price import RUNE_SYMBOL_NATIVE, is_rune
 
 
-class BEPTransaction(IdModel):
-
+class ThorTx(Model):
     DIVIDER = 100_000_000.0
 
+    TYPE_STAKE = 'stake'
+    TYPE_ADD = 'add'
+
     TYPE_SWAP = 'swap'
-    TYPE_DOUBLE_SWAP = 'doubleSwap'
+    TYPE_DOUBLE_SWAP = 'doubleSwap'  # deprecated
+
+    TYPE_WITHDRAW = 'withdraw'
+    TYPE_UNSTAKE = 'unstake'  # deprecated
+
+    TYPE_DONATE = 'donate'
+    TYPE_REFUND = 'refund'
+
+    id = fields.BigIntField(pk=True)
+    block_height = fields.BigIntField(default=0, null=True)
+    hash = fields.CharField(255, unique=True)
 
     type = fields.CharField(20)
-    date = fields.IntField(index=True)
-    pool = fields.CharField(50, index=True)
+    date = fields.BigIntField(index=True)
+
+    pool1 = fields.CharField(50, index=True)
+    pool2 = fields.CharField(50, index=True)
 
     input_address = fields.CharField(255, index=True)
     input_asset = fields.CharField(50, index=True)
@@ -33,20 +45,18 @@ class BEPTransaction(IdModel):
     output_usd_price = fields.FloatField(default=0.0)
 
     rune_volume = fields.FloatField(default=None, null=True)
+    usd_volume = fields.FloatField(default=None, null=True)
 
     fee = fields.FloatField(default=0.0)
     slip = fields.FloatField(default=0.0)
-
-    block_height = fields.IntField(default=0, null=True)
-
-    hash = fields.CharField(255, unique=True)
+    stale_units = fields.FloatField(default=0.0)
 
     def __str__(self):
-        return f"{self.type} @ {datetime.datetime.fromtimestamp(self.date)}(#{self.id}: " \
+        return f"{self.type} @ {datetime.datetime.fromtimestamp(float(self.date))}(#{self.id}: " \
                f"{self.input_amount} {self.input_asset} -> {self.output_amount} {self.output_asset})"
 
     def __repr__(self) -> str:
-        return super().__str__()
+        return self.__str__()
 
     @property
     def simple_json(self):
@@ -64,8 +74,11 @@ class BEPTransaction(IdModel):
             'address:': self.input_address,
             'height': self.block_height,
             'date': self.date,
-            'pool': self.pool,
+            'pool1': self.pool1,
+            'pool2': self.pool2,
             'type': self.type,
+            'rune_volume': self.rune_volume,
+            'usd_volume': self.usd_volume,
         }
 
     @property
@@ -79,7 +92,6 @@ class BEPTransaction(IdModel):
             s = tx['status']
             if s == 'Success':
                 if t in (cls.TYPE_DOUBLE_SWAP, cls.TYPE_SWAP):
-
                     slip = float(tx['events']['slip'])
                     fee = int(tx['events']['fee']) / cls.DIVIDER
 
@@ -145,29 +157,6 @@ class BEPTransaction(IdModel):
         else:
             return None, None
 
-    async def calculate_rune_volume(self):
-        if self.type == self.TYPE_SWAP:
-            # simple
-            return self.input_amount if self.input_asset == RUNE_SYMBOL_NATIVE else self.output_amount
-        else:
-            # double
-            input_price, input_date = await self.get_best_rune_price(self.input_asset, self.date)
-            output_price, output_date = await self.get_best_rune_price(self.output_asset, self.date)
-
-            if input_price and output_price:
-                input_later = input_date > output_date
-                price = input_price if input_later else output_price
-                amount = self.input_amount if input_later else self.output_amount
-            elif input_price:
-                price = input_price
-                amount = self.input_amount
-            elif output_price:
-                price = output_price
-                amount = self.output_amount
-            else:
-                return None
-            return amount * price
-
     @classmethod
     async def last_date(cls):
         try:
@@ -199,20 +188,9 @@ class BEPTransaction(IdModel):
     def is_double(self):
         return self.type == self.TYPE_DOUBLE_SWAP
 
-    @property
-    def usd_volume(self):
-        return self.input_usd_price * self.input_amount
-
-    async def fill_tx_volume_and_usd_prices(self, ppc: 'PoolPriceCache', fetcher: PoolPriceFetcher):
-        _, self.output_usd_price = await ppc.get_historical_price(fetcher, self.output_asset, self.block_height)
-        dollar_per_rune, self.input_usd_price = await ppc.get_historical_price(fetcher, self.input_asset, self.block_height)
-
-        self.rune_volume = self.input_amount * self.input_usd_price / dollar_per_rune
-        return self
-
     @classmethod
     def all_by_date(cls, asc=True):
-        return BEPTransaction.all().order_by('date' if asc else '-date')
+        return cls.all().order_by('date' if asc else '-date')
 
     @classmethod
     async def clear(cls):
@@ -220,7 +198,7 @@ class BEPTransaction(IdModel):
 
     @classmethod
     async def clear_rune_volume(cls):
-        await BEPTransaction.all().update(rune_volume=None)
+        await cls.all().update(rune_volume=None)
 
     @classmethod
     async def all_for_address(cls, input_address):

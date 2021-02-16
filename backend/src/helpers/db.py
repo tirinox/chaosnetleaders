@@ -1,8 +1,9 @@
 import os
+import time
 
-from gino import Gino
+from tortoise import Tortoise
 
-db = Gino()
+from models.tx import ThorTx
 
 
 class DB:
@@ -14,9 +15,13 @@ class DB:
         base = os.environ.get('POSTGRES_DB', 'thorchain')
         port = os.environ.get('POSTGRES_PORT', '54320')
 
-        connect_string = f'postgresql://{user}:{password}@{host}:{port}/{base}'
+        connect_string = f'postgres://{user}:{password}@{host}:{port}/{base}'
         return connect_string
 
     async def start(self):
-        await db.set_bind(self.connect_url)
-        await db.gino.create_all()
+        await Tortoise.init(db_url=self.connect_url, modules={
+            "models": [
+                "models.tx",
+            ]
+        })
+        await Tortoise.generate_schemas()

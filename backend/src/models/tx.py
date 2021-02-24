@@ -1,28 +1,27 @@
 import datetime
-import logging
-from hashlib import sha256
 from random import randint
 
 from tortoise import fields, exceptions, Model
 from tortoise.functions import Max, Count
 
-from _old.pool_price import RUNE_SYMBOL_NATIVE, is_rune
+
+class ThorTxType:
+    TYPE_STAKE = 'stake'  # deprecated (only for v1 parsing)
+    TYPE_ADD = 'add'
+    TYPE_ADD_LIQUIDITY = 'addLiquidity'
+
+    TYPE_SWAP = 'swap'
+    TYPE_DOUBLE_SWAP = 'doubleSwap'  # deprecated (only for v1 parsing)
+
+    TYPE_WITHDRAW = 'withdraw'
+    TYPE_UNSTAKE = 'unstake'  # deprecated (only for v1 parsing)
+
+    TYPE_DONATE = 'donate'
+    TYPE_REFUND = 'refund'
 
 
 class ThorTx(Model):
     DIVIDER = 100_000_000.0
-
-    TYPE_STAKE = 'stake'
-    TYPE_ADD = 'add'
-
-    TYPE_SWAP = 'swap'
-    TYPE_DOUBLE_SWAP = 'doubleSwap'  # deprecated
-
-    TYPE_WITHDRAW = 'withdraw'
-    TYPE_UNSTAKE = 'unstake'  # deprecated
-
-    TYPE_DONATE = 'donate'
-    TYPE_REFUND = 'refund'
 
     id = fields.BigIntField(pk=True)
     block_height = fields.BigIntField(default=0, null=True)
@@ -31,100 +30,28 @@ class ThorTx(Model):
     type = fields.CharField(20)
     date = fields.BigIntField(index=True)
 
-    pool1 = fields.CharField(50, index=True)
-    pool2 = fields.CharField(50, index=True)
+    user_address = fields.CharField(255, index=True)
+    asset1 = fields.CharField(50, index=True)
+    amount1 = fields.FloatField()
+    usd_price1 = fields.FloatField(default=0.0)
 
-    input_address = fields.CharField(255, index=True)
-    input_asset = fields.CharField(50, index=True)
-    input_amount = fields.FloatField()
-    input_usd_price = fields.FloatField(default=0.0)
-
-    output_address = fields.CharField(255, index=True)
-    output_asset = fields.CharField(50, index=True)
-    output_amount = fields.FloatField()
-    output_usd_price = fields.FloatField(default=0.0)
+    asset2 = fields.CharField(50, index=True, null=True)
+    amount2 = fields.FloatField()
+    usd_price2 = fields.FloatField(default=0.0)
 
     rune_volume = fields.FloatField(default=None, null=True)
     usd_volume = fields.FloatField(default=None, null=True)
 
     fee = fields.FloatField(default=0.0)
     slip = fields.FloatField(default=0.0)
-    stale_units = fields.FloatField(default=0.0)
+    liq_units = fields.FloatField(default=0.0)
 
     def __str__(self):
         return f"{self.type} @ {datetime.datetime.fromtimestamp(float(self.date))}(#{self.id}: " \
-               f"{self.input_amount} {self.input_asset} -> {self.output_amount} {self.output_asset})"
+               f"{self.amount1} {self.asset1} -> {self.amount2} {self.asset2})"
 
     def __repr__(self) -> str:
         return self.__str__()
-
-    @property
-    def simple_json(self):
-        return {
-            'in': {
-                'coin': self.input_asset,
-                'amount': self.input_amount,
-                'usd': self.input_usd_price
-            },
-            'out': {
-                'coin': self.output_asset,
-                'amount': self.output_amount,
-                'usd': self.output_usd_price
-            },
-            'address:': self.input_address,
-            'height': self.block_height,
-            'date': self.date,
-            'pool1': self.pool1,
-            'pool2': self.pool2,
-            'type': self.type,
-            'rune_volume': self.rune_volume,
-            'usd_volume': self.usd_volume,
-        }
-
-    @property
-    def other_asset(self):
-        return self.input_asset if self.output_address == RUNE_SYMBOL_NATIVE else self.output_address
-
-    @classmethod
-    def from_json(cls, tx):
-        try:
-            t = tx['type']
-            s = tx['status']
-            if s == 'Success':
-                if t in (cls.TYPE_DOUBLE_SWAP, cls.TYPE_SWAP):
-                    slip = float(tx['events']['slip'])
-                    fee = int(tx['events']['fee']) / cls.DIVIDER
-
-                    in_data, out_data = tx['in'], tx['out'][0]
-
-                    in_coin = in_data['coins'][0]
-                    out_coin = out_data['coins'][0]
-                    in_amount = int(in_coin['amount']) / cls.DIVIDER
-                    out_amount = int(out_coin['amount']) / cls.DIVIDER
-
-                    hasher = sha256()
-                    hasher.update(in_data['txID'].encode('ascii'))
-                    hasher.update(out_data['txID'].encode('ascii'))
-                    tx_hash = hasher.hexdigest()
-
-                    return cls(type=t,
-                               date=int(tx['date']),
-                               pool=tx['pool'],
-                               input_address=in_data['address'],
-                               input_asset=in_coin['asset'],
-                               input_amount=in_amount,
-                               input_usd_price=-1.0,
-                               output_address=out_data['address'],
-                               output_asset=out_coin['asset'],
-                               output_amount=out_amount,
-                               output_usd_price=-1.0,
-                               fee=fee,
-                               slip=slip,
-                               hash=tx_hash,
-                               block_height=int(tx['height']))
-        except (LookupError, ValueError) as e:
-            logging.error(f"failed to parse transaction JSON; exeption: {e}")
-            return None
 
     async def save_unique(self):
         try:
@@ -137,25 +64,10 @@ class ThorTx(Model):
         except exceptions.IntegrityError:
             return False
 
-    def _get_price_rune(self):
-        if is_rune(self.input_asset):
-            return self.input_amount / self.output_amount
-        elif is_rune(self.output_asset):
-            return self.output_amount / self.input_amount
-
     @classmethod
     async def get_items_with_no_prices(cls, start=0, limit=10):
+        # fixme
         return await cls.filter(output_usd_price_lte=1e-10, input_usd_price_lte=1e-10).limit(limit).offset(start).all()
-
-    @classmethod
-    async def get_best_rune_price(cls, pool, date):
-        transaction_before = await cls.filter(date__lte=date, pool=pool, type=cls.TYPE_SWAP).order_by("-date").first()
-
-        if transaction_before:
-            price = transaction_before._get_price_rune()
-            return price, transaction_before.date
-        else:
-            return None, None
 
     @classmethod
     async def last_date(cls):

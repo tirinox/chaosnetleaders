@@ -6,7 +6,6 @@ import pytest
 from jobs.tx.parser import TxParserV1, SubTx
 from models.tx import ThorTx, ThorTxType
 
-
 PATH = './backend/src/test/tx_examples'
 DIV = ThorTx.DIVIDER
 
@@ -196,6 +195,7 @@ def test_parser_v1_stake(example_tx_gen):
         assert tx.date > 0
         assert tx.type == ThorTxType.TYPE_ADD_LIQUIDITY
         assert tx.amount1 > 0 or tx.amount2 > 0
+        assert tx.asset1 is not None
 
     tx0 = result.txs[0]
 
@@ -210,14 +210,83 @@ def test_parser_v1_stake(example_tx_gen):
 
     tx_asym = next(t for t in result.txs if t.date == 1614227672)
 
+    assert tx_asym.user_address == 'bnb1zkkpuqxhkl376hpkja6en6gt9lrrxzw5k6p2rc'
     assert tx_asym.amount2 == 0.0
     assert tx_asym.asset1 == 'BNB.XRP-BF2'
     assert tx_asym.amount1 == pytest.approx(399754442559 / DIV)
 
     tx_asym_rune = next(t for t in result.txs if t.date == 1614215021)
 
+    assert tx_asym_rune.user_address == 'bnb16znr4gq8a89eg40qzkvnp8vr30efxu9mntgykq'
     assert tx_asym_rune.amount1 == 0.0
     assert tx_asym_rune.asset1 == 'BNB.COTI-CBB'
     assert tx_asym_rune.asset2 is None
     assert tx_asym_rune.amount2 == pytest.approx(144046120246 / DIV)
 
+
+def test_parser_v1_unstake(example_tx_gen):
+    example_tx_list = example_tx_gen(name='v1_unstake.json')
+
+    result = TxParserV1().parse_tx_response(example_tx_list)
+    assert len(result.txs) == 24  # 18 are pending!
+    assert result.total_count == 12500
+
+    for tx in result.txs:
+        assert tx.block_height > 0
+        assert tx.date > 0
+        assert tx.type == ThorTxType.TYPE_WITHDRAW
+        assert tx.amount1 > 0 and tx.amount2 > 0
+        assert tx.asset1 is not None
+        assert tx.asset2 is None
+
+    tx0 = result.txs[0]
+
+    assert tx0.asset1 == 'BNB.BTCB-1DE'
+    assert tx0.amount1 == pytest.approx(46546272 / DIV)
+    assert tx0.asset2 is None
+    assert tx0.amount2 == pytest.approx(473485683282 / DIV)
+    assert tx0.user_address == 'bnb12nnn740tn4d2n6tyr2kpzqz7qsesl8h8rpjwgs'
+
+
+def test_parser_v1_add(example_tx_gen):
+    example_tx_list = example_tx_gen(name='v1_add.json')
+
+    result = TxParserV1().parse_tx_response(example_tx_list)
+
+    assert len(result.txs) == 36
+    assert result.total_count == 36
+
+    for tx in result.txs:
+        assert tx.block_height > 0
+        assert tx.date > 0
+        assert tx.type == ThorTxType.TYPE_ADD
+        assert tx.amount1 > 0 or tx.amount2 > 0
+        assert tx.asset1 is not None
+        assert tx.liq_units == 0 and tx.slip == 0.0 and tx.fee == 0
+
+    tx0 = result.txs[0]
+
+    assert tx0.asset1 == 'BNB.USDT-6D8'
+    assert tx0.amount1 == 0.0  # rune only adds in this test
+    assert tx0.asset2 is None
+    assert tx0.amount2 == pytest.approx(2500000000000 / DIV)
+
+
+def test_parser_v1_refund(example_tx_gen):
+    example_tx_list = example_tx_gen(name='v1_refund.json')
+
+    result = TxParserV1().parse_tx_response(example_tx_list)
+
+    assert len(result.txs) == 13
+    assert result.total_count == 3314
+
+    for tx in result.txs:
+        assert tx.block_height > 0
+        assert tx.date > 0
+        assert tx.type == ThorTxType.TYPE_REFUND
+
+    tx0 = result.txs[0]
+    assert tx0.user_address == 'bnb143cx0wzff603u29hvvvnq00hmr9tx9p7n4tfdr'
+    assert tx0.asset1 == '.'
+    assert tx0.amount1 == 0.0
+    assert tx0.amount2 == pytest.approx(527077000000 / DIV)

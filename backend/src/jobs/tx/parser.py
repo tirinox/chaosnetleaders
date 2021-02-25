@@ -144,6 +144,13 @@ class TxParserV1(TxParserBase):
                 if input_tx.none_rune_coins:
                     amount1 = input_tx.none_rune_coins[0].amount
                 asset2 = None
+            elif tx_type == ThorTxType.TYPE_REFUND:
+                asset1 = pool
+                if input_tx.rune_coin:
+                    amount2 = input_tx.rune_coin.amount
+                if input_tx.none_rune_coins:
+                    amount1 = input_tx.none_rune_coins[0].amount
+                asset2 = None
 
             events = r.get('events', {})
 

@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from jobs.tx.parser import TxParserV1, SubTx
+from jobs.tx.parser import TxParserV1, SubTx, TxParserV2
 from models.tx import ThorTx, ThorTxType
 
 PATH = './backend/src/test/tx_examples'
@@ -134,9 +134,10 @@ def test_parser_v1_swap(example_tx_gen):
     assert result.total_count == 211078
 
     for tx in result.txs:
+        assert tx.hash
         assert tx.block_height > 0
         assert tx.date > 0
-        assert tx.asset1 is not None
+        assert tx.asset1 is not None or tx.asset2 is not None
         assert tx.type == ThorTxType.TYPE_SWAP
 
         assert tx.amount1 > 0
@@ -145,10 +146,10 @@ def test_parser_v1_swap(example_tx_gen):
     tx0 = result.txs[0]
     assert tx0.date == 1613413527
     assert tx0.block_height == 2648585
-    assert tx0.asset1 == 'BNB.BNB'
-    assert tx0.amount1 == 2274318077 / DIV
-    assert tx0.asset2 is None
-    assert tx0.amount2 == 70000000000 / DIV
+    assert tx0.asset2 == 'BNB.BNB'
+    assert tx0.amount2 == 2274318077 / DIV
+    assert tx0.asset1 is None
+    assert tx0.amount1 == 70000000000 / DIV
     assert tx0.slip == 0.0009
     assert tx0.fee == 1073372 / DIV
 
@@ -161,6 +162,7 @@ def test_parser_v1_double(example_tx_gen):
     assert result.total_count == 135643
 
     for tx in result.txs:
+        assert tx.hash
         assert tx.block_height > 0
         assert tx.date > 0
         assert tx.asset1 is not None
@@ -191,6 +193,7 @@ def test_parser_v1_stake(example_tx_gen):
     assert result.total_count == 21791
 
     for tx in result.txs:
+        assert tx.hash
         assert tx.block_height > 0
         assert tx.date > 0
         assert tx.type == ThorTxType.TYPE_ADD_LIQUIDITY
@@ -232,6 +235,7 @@ def test_parser_v1_unstake(example_tx_gen):
     assert result.total_count == 12500
 
     for tx in result.txs:
+        assert tx.hash
         assert tx.block_height > 0
         assert tx.date > 0
         assert tx.type == ThorTxType.TYPE_WITHDRAW
@@ -257,6 +261,7 @@ def test_parser_v1_add(example_tx_gen):
     assert result.total_count == 36
 
     for tx in result.txs:
+        assert tx.hash
         assert tx.block_height > 0
         assert tx.date > 0
         assert tx.type == ThorTxType.TYPE_ADD
@@ -281,6 +286,7 @@ def test_parser_v1_refund(example_tx_gen):
     assert result.total_count == 3314
 
     for tx in result.txs:
+        assert tx.hash
         assert tx.block_height > 0
         assert tx.date > 0
         assert tx.type == ThorTxType.TYPE_REFUND
@@ -290,3 +296,93 @@ def test_parser_v1_refund(example_tx_gen):
     assert tx0.asset1 == '.'
     assert tx0.amount1 == 0.0
     assert tx0.amount2 == pytest.approx(527077000000 / DIV)
+
+
+# -------------------- V2 -------------------
+
+
+def test_parser_v2_swap(example_tx_gen):
+    example_tx_list = example_tx_gen(name='v2_swap.json')
+    result = TxParserV2().parse_tx_response(example_tx_list)
+    assert len(result.txs) == 30
+    assert result.total_count == 812
+
+    for tx in result.txs:
+        assert tx.hash
+        assert tx.block_height > 0
+        assert tx.date > 0
+        assert tx.asset1 is not None or tx.asset2 is not None
+        assert tx.type == ThorTxType.TYPE_SWAP
+        assert tx.amount1 > 0
+        assert tx.amount2 > 0
+
+    tx_dbl_swap = next(tx for tx in result.txs if tx.date == 1614102869)
+    assert tx_dbl_swap.block_height == 272436
+    assert tx_dbl_swap.user_address == 'tb1q7lazuy5h4r9d3zvruj462pcjckuu784qjdhr7k'
+    assert tx_dbl_swap.asset1 == 'BTC.BTC'
+    assert tx_dbl_swap.amount1 == pytest.approx(928909 / DIV)
+    assert tx_dbl_swap.asset2 == 'BNB.BNB'
+    assert tx_dbl_swap.amount2 == pytest.approx(58385053 / DIV)
+
+    tx0 = result.txs[0]
+    assert tx0.block_height == 285211
+    assert tx0.date == 1614180238
+    assert tx0.asset1 is None
+    assert tx0.amount1 == pytest.approx(90000000000 / DIV)
+    assert tx0.asset2 == 'BTC.BTC'
+    assert tx0.amount2 == pytest.approx(1719159 / DIV)
+    assert tx0.slip == pytest.approx(208 / 10000)
+    assert tx0.fee == pytest.approx(1828747694 / DIV)
+
+    tx_inv = next(tx for tx in result.txs if tx.date == 1614137740)
+    assert tx_inv.block_height == 278207
+    assert tx_inv.user_address == 'tb1qrenvgjmg3wzl23u3wl2dw9umcds8gv2ewff7a2'
+    assert tx_inv.asset1 == 'BTC.BTC'
+    assert tx_inv.amount1 == pytest.approx(488650 / DIV)
+    assert tx_inv.asset2 is None
+    assert tx_inv.amount2 == pytest.approx(22486553084 / DIV)
+
+
+def test_parser_v2_add(example_tx_gen):
+    example_tx_list = example_tx_gen(name='v2_add.json')
+    result = TxParserV2().parse_tx_response(example_tx_list)
+    assert len(result.txs) == 29
+    assert result.total_count == 262
+
+    for tx in result.txs:
+        assert tx.block_height > 0
+        assert tx.date > 0
+        assert tx.asset1 is not None or tx.asset2 is not None
+        assert tx.type == ThorTxType.TYPE_ADD_LIQUIDITY
+        assert tx.amount1 > 0 or tx.amount2 > 0
+        assert tx.hash
+
+    tx0 = result.txs[0]  # both, rune first
+    assert tx0.block_height == 285155
+    assert tx0.user_address == 'tthor19rxk8wqd4z3hhemp6es0zwgxpwtqvlx2a7gh68'
+    assert tx0.liq_units == pytest.approx(2416906866 / DIV)
+    assert tx0.asset1 is None
+    assert tx0.amount1 == pytest.approx(10059187641 / DIV)
+    assert tx0.asset2 == "BTC.BTC"
+    assert tx0.amount2 == pytest.approx(340000 / DIV)
+
+    tx1 = result.txs[1]  # both, rune second
+    assert tx1.block_height == 278364
+    assert tx1.user_address == 'tthor1dqj9w9k39659h8dkrnn05teqwnfe87l5zf38hh'
+    assert tx1.liq_units == pytest.approx(748901309 / DIV)
+    assert tx1.asset1 == 'ETH.USDT-0X62E273709DA575835C7F6AEF4A31140CA5B1D190'
+    assert tx1.amount1 == pytest.approx(1000000000 / DIV)
+    assert tx1.asset2 is None
+    assert tx1.amount2 == pytest.approx(6975663560 / DIV)
+
+    tx_rune_only = next(tx for tx in result.txs if tx.date == 1614055661)
+    assert tx_rune_only.user_address == 'tthor1xzwpeenj3t8y445w0u4uplzuuh2f0d59qwh5hg'
+    assert tx_rune_only.amount2 == 0.0
+    assert tx_rune_only.asset2 == 'BTC.BTC'
+    assert tx_rune_only.amount1 == pytest.approx(17050528423 / DIV)
+
+    tx_bnb_only = next(tx for tx in result.txs if tx.date == 1614137483)
+    assert tx_bnb_only.user_address == 'tbnb1hs33v9yfwr4559vzhhw45yvrqa6c7wpeegjpyn'
+    assert tx_bnb_only.asset1 == 'BNB.BNB'
+    assert tx_bnb_only.amount1 == pytest.approx(1925000 / DIV)
+    assert tx_bnb_only.asset2 is None

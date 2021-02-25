@@ -41,16 +41,7 @@
 			"date": "1614138687416452032",
 			"height": "278364",
 			"in": [
-				{
-					"address": "tthor1dqj9w9k39659h8dkrnn05teqwnfe87l5zf38hh",
-					"coins": [
-						{
-							"amount": "6975663560",
-							"asset": "THOR.RUNE"
-						}
-					],
-					"txID": "1CE461D20D071B53A34AFA498E78C61D748F29D42F06FF189321C32AB1E2EC8E"
-				},
+
 				{
 					"address": "0x669194036fd48d729a5fd618a44b0ee87994c8fc",
 					"coins": [
@@ -60,8 +51,18 @@
 						}
 					],
 					"txID": "1EC713FBF2255AD33D2177F98F0DFB7E92351167DFA797D5EC76F45F77C6B84F"
+				},
+        {
+					"address": "tthor1dqj9w9k39659h8dkrnn05teqwnfe87l5zf38hh",
+					"coins": [
+						{
+							"amount": "6975663560",
+							"asset": "THOR.RUNE"
+						}
+					],
+					"txID": "1CE461D20D071B53A34AFA498E78C61D748F29D42F06FF189321C32AB1E2EC8E"
 				}
-			],
+      ],
 			"metadata": {
 				"addLiquidity": {
 					"liquidityUnits": "748901309"
@@ -115,16 +116,6 @@
 			"date": "1614137483494148772",
 			"height": "278164",
 			"in": [
-				{
-					"address": "tthor10mas0mmmwf8vqx6v7yyyvsrtyt4s445ncrvyw4",
-					"coins": [
-						{
-							"amount": "1299372945",
-							"asset": "THOR.RUNE"
-						}
-					],
-					"txID": "6B25397B0A0F674926640E23CCDA624A52E2DB6D0E7F08D9EA5BB93AEE1CA8DA"
-				},
 				{
 					"address": "tbnb1hs33v9yfwr4559vzhhw45yvrqa6c7wpeegjpyn",
 					"coins": [
@@ -531,16 +522,6 @@
 						}
 					],
 					"txID": "9A64EA05BB7B7769A4A60CED4C6FAC61D78569424A9F302CC8C659873047979D"
-				},
-				{
-					"address": "tb1q0dvur7t9w2caf7jy5v7tgt74t362277tcdgg64",
-					"coins": [
-						{
-							"amount": "420000",
-							"asset": "BTC.BTC"
-						}
-					],
-					"txID": "C904B6D59D10C8E088C0F4D7886EE37E1E816D1AB671A85A1441D6191991C029"
 				}
 			],
 			"metadata": {
@@ -1107,7 +1088,7 @@
 			"pools": [
 				"BTC.BTC"
 			],
-			"status": "success",
+			"status": "fail",
 			"type": "addLiquidity"
 		}
 	],

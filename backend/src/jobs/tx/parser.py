@@ -111,17 +111,12 @@ class TxParserV1(TxParserBase):
             usd_price1, usd_price2 = 0.0, 0.0
 
             if tx_type == ThorTxType.TYPE_SWAP:
-                input_asset, input_amount = input_tx.first_asset, input_tx.first_amount
-                output_asset, output_amount = out_tx_list[0].first_asset, out_tx_list[0].first_amount
-                if is_rune(input_asset):  # ordinary swap
-                    asset1, amount1 = output_asset, output_amount
-                    asset2, amount2 = None, input_amount  # none = Rune
-                elif is_rune(output_asset):  # ordinary swap
-                    asset1, amount1 = input_asset, input_amount
-                    asset2, amount2 = None, output_amount  # none = Rune
-                else:  # double swap
-                    asset1, amount1 = input_asset, input_amount
-                    asset2, amount2 = output_asset, output_amount
+                asset1, amount1 = input_tx.first_asset, input_tx.first_amount
+                asset2, amount2 = out_tx_list[0].first_asset, out_tx_list[0].first_amount
+                if is_rune(asset1):
+                    asset1 = None
+                elif is_rune(asset2):
+                    asset2 = None
             elif tx_type == ThorTxType.TYPE_WITHDRAW:
                 out_compound = SubTx.join_coins(out_tx_list)
                 not_rune_coin = out_compound.none_rune_coins[0]
@@ -155,7 +150,7 @@ class TxParserV1(TxParserBase):
             events = r.get('events', {})
 
             txs.append(ThorTx(
-                id=int(r.get('id', 0)),
+                id=0,
                 block_height=int(r.get('height', 0)),
                 hash=tx_hash,
                 type=tx_type,
@@ -184,7 +179,76 @@ class TxParserV2(TxParserBase):
     """
 
     def parse_tx_response(self, response: dict) -> TxParseResult:
-        txs = response.get('actions', [])
+        raw_txs = response.get('actions', [])
         count = int(response.get('count', 0))
 
-        return TxParseResult(0, [])
+        mult = 1.0 / ThorTx.DIVIDER
+
+        txs = []
+        for r in raw_txs:
+            status = r.get('status', '').lower()
+            if status != 'success':
+                continue
+
+            tx_type = r.get('type')
+            pools = r.get('pools', [])
+            date = int(int(r.get('date', 0)) * 10e-10)
+            metadata = r.get('metadata', {})
+
+            in_tx_list = [SubTx.parse(rt) for rt in r.get('in', [])]
+            out_tx_list = [SubTx.parse(rt) for rt in r.get('out', [])]
+
+            user_address = in_tx_list[0].address
+            fee, slip, liq_units = 0.0, 0.0, 0.0
+
+            asset1, asset2 = None, None
+            amount1, amount2 = 0.0, 0.0
+            usd_price1, usd_price2 = 0.0, 0.0
+
+            tx_hash = r.get('in', [{}])[0].get('txID', '')
+
+            if tx_type == ThorTxType.TYPE_SWAP:
+                asset1, amount1 = in_tx_list[0].first_asset, in_tx_list[0].first_amount
+                asset2, amount2 = out_tx_list[0].first_asset, out_tx_list[0].first_amount
+                if is_rune(asset1):
+                    asset1 = None
+                elif is_rune(asset2):
+                    asset2 = None
+                swap_meta = metadata.get('swap', {})
+                slip = int(swap_meta.get('tradeSlip', 0)) / 10000.0
+                fee = int(swap_meta.get('liquidityFee', 0)) * mult
+            elif tx_type == ThorTxType.TYPE_ADD_LIQUIDITY:
+                asset1, amount1 = in_tx_list[0].first_asset, in_tx_list[0].first_amount
+                if is_rune(asset1):
+                    asset1 = None
+                    asset2 = pools[0]
+                    user_address = in_tx_list[0].address
+                if len(in_tx_list) >= 2:
+                    asset2, amount2 = in_tx_list[1].first_asset, in_tx_list[1].first_amount
+                    if is_rune(asset2):
+                        asset2 = None
+                        asset1 = pools[0]
+                        user_address = in_tx_list[1].address
+                liq_units = int(metadata.get('addLiquidity', {}).get('liquidityUnits', 0)) * mult
+
+            txs.append(ThorTx(
+                id=0,
+                block_height=int(r.get('height', 0)),
+                hash=tx_hash,
+                type=tx_type,
+                date=date,
+                user_address=user_address,
+                asset1=asset1,
+                amount1=amount1,
+                usd_price1=usd_price1,
+                asset2=asset2,
+                amount2=amount2,
+                usd_price2=usd_price2,
+                rune_volume=0.0,
+                usd_volume=0.0,
+                fee=fee,
+                slip=slip,
+                liq_units=liq_units,
+            ))
+
+        return TxParseResult(count, txs)

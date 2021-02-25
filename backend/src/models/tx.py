@@ -31,11 +31,12 @@ class ThorTx(Model):
     date = fields.BigIntField(index=True)
 
     user_address = fields.CharField(255, index=True)
-    asset1 = fields.CharField(50, index=True)
+
+    asset1 = fields.CharField(128, index=True, null=True)
     amount1 = fields.FloatField()
     usd_price1 = fields.FloatField(default=0.0)
 
-    asset2 = fields.CharField(50, index=True, null=True)
+    asset2 = fields.CharField(128, index=True, null=True)
     amount2 = fields.FloatField()
     usd_price2 = fields.FloatField(default=0.0)
 

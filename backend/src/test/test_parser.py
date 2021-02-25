@@ -6,15 +6,9 @@ import pytest
 from jobs.tx.parser import TxParserV1, SubTx
 from models.tx import ThorTx, ThorTxType
 
-LIST_OF_EXAMPLE = (
-    'v1_add.json',
-    'v1_dbl_swap.json',
-    'v1_refund.json',
-    'v1_stake_unstake.json',
-    'v1_swap.json',
-)
 
 PATH = './backend/src/test/tx_examples'
+DIV = ThorTx.DIVIDER
 
 
 @pytest.fixture
@@ -84,16 +78,16 @@ def test_sub_tx_parse(sub_tx1_json, sub_tx2_json, sub_tx3_json):
     assert sub_tx1.address == 'bnb13ettsw2h5cwxecrze6y4ppd7rwpes08j4wldph'
     assert len(sub_tx1.coins) == 1
     assert sub_tx1.first_asset == 'BNB.WISH-2D5'
-    assert sub_tx1.first_amount == 98900000000 / ThorTx.DIVIDER
+    assert sub_tx1.first_amount == 98900000000 / DIV
     assert sub_tx1.rune_coin is None
     assert sub_tx1.none_rune_coins[0].asset == 'BNB.WISH-2D5'
-    assert sub_tx1.none_rune_coins[0].amount == 98900000000 / ThorTx.DIVIDER
+    assert sub_tx1.none_rune_coins[0].amount == 98900000000 / DIV
 
     sub_tx2 = SubTx.parse(sub_tx2_json)
     assert sub_tx2.address == 'bnb14h4sduxusywddpt7x3vmcy9wfzdy074jcw6anj'
     assert len(sub_tx2.coins) == 2
     assert sub_tx2.first_asset == 'BNB.ETH-1C9'
-    assert sub_tx2.first_amount == 22000000 / ThorTx.DIVIDER
+    assert sub_tx2.first_amount == 22000000 / DIV
     assert sub_tx2.rune_coin == sub_tx2.coins[1]
     assert sub_tx2.none_rune_coins[0] == sub_tx2.coins[0]
 
@@ -101,7 +95,7 @@ def test_sub_tx_parse(sub_tx1_json, sub_tx2_json, sub_tx3_json):
     assert sub_tx3.address == 'bnb124rn50ddmvy0g7u48mmpma4afm4laldzpken6q'
     assert len(sub_tx3.coins) == 2
     assert sub_tx3.first_asset == 'BNB.RUNE-B1A'
-    assert sub_tx3.first_amount == 553133983000 / ThorTx.DIVIDER
+    assert sub_tx3.first_amount == 553133983000 / DIV
     assert sub_tx3.rune_coin == sub_tx3.coins[0]
     assert sub_tx3.none_rune_coins[0] == sub_tx3.coins[1]
     assert sub_tx3.none_rune_coins[0].asset == 'BNB.BTCB-1DE'
@@ -123,13 +117,13 @@ def test_sub_tx_combine(sub_tx1_json, sub_tx2_json, sub_tx3_json):
 
     for c in comb_tx.coins:
         if c.asset == 'BNB.RUNE-B1A':
-            assert c.amount == 553133983000 / ThorTx.DIVIDER + 9481098498 / ThorTx.DIVIDER
+            assert c.amount == 553133983000 / DIV + 9481098498 / DIV
         elif c.asset == 'BNB.BTCB-1DE':
-            assert c.amount == 48383327 / ThorTx.DIVIDER
+            assert c.amount == 48383327 / DIV
         elif c.asset == 'BNB.WISH-2D5':
-            assert c.amount == 98900000000 / ThorTx.DIVIDER
+            assert c.amount == 98900000000 / DIV
         elif c.asset == 'BNB.ETH-1C9':
-            assert c.amount == 22000000 / ThorTx.DIVIDER
+            assert c.amount == 22000000 / DIV
         else:
             assert False, 'unexpected'
 
@@ -153,11 +147,11 @@ def test_parser_v1_swap(example_tx_gen):
     assert tx0.date == 1613413527
     assert tx0.block_height == 2648585
     assert tx0.asset1 == 'BNB.BNB'
-    assert tx0.amount1 == 2274318077 / ThorTx.DIVIDER
+    assert tx0.amount1 == 2274318077 / DIV
     assert tx0.asset2 is None
-    assert tx0.amount2 == 70000000000 / ThorTx.DIVIDER
+    assert tx0.amount2 == 70000000000 / DIV
     assert tx0.slip == 0.0009
-    assert tx0.fee == 1073372 / ThorTx.DIVIDER
+    assert tx0.fee == 1073372 / DIV
 
 
 def test_parser_v1_double(example_tx_gen):
@@ -180,11 +174,50 @@ def test_parser_v1_double(example_tx_gen):
     tx0 = result.txs[0]
 
     assert tx0.date == 1613413139
-    assert tx0.fee == 2042385115 / ThorTx.DIVIDER
+    assert tx0.fee == 2042385115 / DIV
     assert tx0.slip == 0.0075
     assert tx0.block_height == 2648519
     assert tx0.user_address == 'bnb13ettsw2h5cwxecrze6y4ppd7rwpes08j4wldph'
     assert tx0.asset1 == 'BNB.BNB'
-    assert tx0.amount1 == 828153725 / ThorTx.DIVIDER
+    assert tx0.amount1 == 828153725 / DIV
     assert tx0.asset2 == 'BNB.FTM-A64'
-    assert tx0.amount2 == 564038247209 / ThorTx.DIVIDER
+    assert tx0.amount2 == 564038247209 / DIV
+
+
+def test_parser_v1_stake(example_tx_gen):
+    example_tx_list = example_tx_gen(name='v1_stake.json')
+
+    result = TxParserV1().parse_tx_response(example_tx_list)
+    assert len(result.txs) == 42
+    assert result.total_count == 21791
+
+    for tx in result.txs:
+        assert tx.block_height > 0
+        assert tx.date > 0
+        assert tx.type == ThorTxType.TYPE_ADD_LIQUIDITY
+        assert tx.amount1 > 0 or tx.amount2 > 0
+
+    tx0 = result.txs[0]
+
+    assert tx0.date == 1614233083
+    assert tx0.fee == 0.0
+    assert tx0.slip == 0.0
+    assert tx0.liq_units == pytest.approx(5836882950 / DIV)
+    assert tx0.asset1 == 'BNB.ADA-9F4'
+    assert tx0.amount1 == pytest.approx(21153800000 / DIV)
+    assert tx0.asset2 is None
+    assert tx0.amount2 == pytest.approx(4494293221 / DIV)
+
+    tx_asym = next(t for t in result.txs if t.date == 1614227672)
+
+    assert tx_asym.amount2 == 0.0
+    assert tx_asym.asset1 == 'BNB.XRP-BF2'
+    assert tx_asym.amount1 == pytest.approx(399754442559 / DIV)
+
+    tx_asym_rune = next(t for t in result.txs if t.date == 1614215021)
+
+    assert tx_asym_rune.amount1 == 0.0
+    assert tx_asym_rune.asset1 == 'BNB.COTI-CBB'
+    assert tx_asym_rune.asset2 is None
+    assert tx_asym_rune.amount2 == pytest.approx(144046120246 / DIV)
+

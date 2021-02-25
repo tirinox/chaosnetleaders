@@ -131,11 +131,12 @@ class TxParserV1(TxParserBase):
                 amount2 = out_compound.rune_coin.amount
             elif tx_type == ThorTxType.TYPE_ADD_LIQUIDITY:
                 user_address = input_tx.address
-                not_rune_coin = input_tx.none_rune_coins[0]
+                if input_tx.none_rune_coins:
+                    amount1 = input_tx.none_rune_coins[0].amount
                 asset1 = pool
-                amount1 = not_rune_coin.amount
                 asset2 = None
-                amount2 = input_tx.rune_coin.amount
+                if input_tx.rune_coin:
+                    amount2 = input_tx.rune_coin.amount
             elif tx_type in (ThorTxType.TYPE_ADD, ThorTxType.TYPE_DONATE):
                 asset1 = pool
                 if input_tx.rune_coin:
@@ -163,7 +164,7 @@ class TxParserV1(TxParserBase):
                 usd_volume=0.0,
                 fee=float(events.get('fee', 0)) * mult,
                 slip=float(events.get('slip', 0)),
-                stake_units=float(events.get('stakeUnits', 0)) * mult,
+                liq_units=float(events.get('stakeUnits', 0)) * mult,
             ))
 
         count = int(response.get('count', 0))

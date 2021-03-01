@@ -27,6 +27,8 @@ class ThorTx(Model):
     block_height = fields.BigIntField(default=0, null=True)
     hash = fields.CharField(255, unique=True)
 
+    network = fields.CharField(80, default='testnet', index=True)
+
     type = fields.CharField(20)
     date = fields.BigIntField(index=True)
 
@@ -96,10 +98,6 @@ class ThorTx(Model):
         i = randint(0, n - 1)
         tx = await cls.without_volume().offset(i).limit(1).first()
         return tx, n
-
-    @property
-    def is_double(self):
-        return self.type == self.TYPE_DOUBLE_SWAP
 
     @classmethod
     def all_by_date(cls, asc=True):

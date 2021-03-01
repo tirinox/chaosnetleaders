@@ -1,11 +1,11 @@
 import logging
-import os
 
 from aiohttp import web
 from dotenv import load_dotenv
 
 from api import handler_leaderboard
-from _old.fetcher import run_fetcher
+# from _old.fetcher import run_fetcher
+from helpers.db import DB
 
 PORT = 5000
 
@@ -13,24 +13,18 @@ logging.basicConfig(level=logging.INFO)
 
 
 async def init_db(*_):
-    host = os.environ.get('MYSQL_HOST', 'localhost')
-    user = os.environ['MYSQL_USER']
-    password = os.environ['MYSQL_PASSWORD']
-    base = os.environ['MYSQL_DATABASE']
-
-    # await Tortoise.init(db_url=f"mysql://{user}:{password}@{host}/{base}", modules={
-    #     "models": [
-    #         "midgard.models.transaction",
-    #     ]
-    # })
-    # await Tortoise.generate_schemas()
+    db = DB()
+    await db.start()
+    return db
 
 
 def run_api_server():
     app = web.Application(middlewares=[])
     app.add_routes([web.get('/api/v1/leaderboard', handler_leaderboard)])
     app.on_startup.append(init_db)
-    app.on_startup.append(run_fetcher)
+
+    # run bg tasks
+    # app.on_startup.append(run_fetcher)
 
     web.run_app(app, port=PORT)
 

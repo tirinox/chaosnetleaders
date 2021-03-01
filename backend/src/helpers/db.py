@@ -14,8 +14,9 @@ class DB:
         password = os.environ['POSTGRES_PASSWORD']
         base = os.environ.get('POSTGRES_DB', 'thorchain')
         port = os.environ.get('POSTGRES_PORT', '54320')
+        db_type = 'postgres'
 
-        connect_string = f'postgres://{user}:{password}@{host}:{port}/{base}'
+        connect_string = f'{db_type}://{user}:{password}@{host}:{port}/{base}'
         return connect_string
 
     async def start(self):

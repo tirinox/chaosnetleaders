@@ -14,6 +14,11 @@ logger = logging.getLogger(__name__)
 class TxParseResult(NamedTuple):
     total_count: int = 0
     txs: List[ThorTx] = None
+    tx_count_unfiltered: int = 0
+
+    @property
+    def tx_count(self):
+        return len(self.txs)
 
 
 class TxParserBase(metaclass=ABCMeta):
@@ -170,7 +175,7 @@ class TxParserV1(TxParserBase):
             ))
 
         count = int(response.get('count', 0))
-        return TxParseResult(count, txs)
+        return TxParseResult(count, txs, len(raw_txs))
 
 
 class TxParserV2(TxParserBase):
@@ -251,4 +256,4 @@ class TxParserV2(TxParserBase):
                 liq_units=liq_units,
             ))
 
-        return TxParseResult(count, txs)
+        return TxParseResult(count, txs, len(raw_txs))

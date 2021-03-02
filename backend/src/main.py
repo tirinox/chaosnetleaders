@@ -6,22 +6,23 @@ from dotenv import load_dotenv
 from api import handler_leaderboard
 # from _old.fetcher import run_fetcher
 from helpers.db import DB
+from helpers.deps import Dependencies
 
 PORT = 5000
 
 logging.basicConfig(level=logging.INFO)
 
 
-async def init_db(*_):
-    db = DB()
-    await db.start()
-    return db
+async def init_db(app):
+    deps = app['deps']
+    await deps.db.start()
 
 
-def run_api_server():
+def run_api_server(deps):
     app = web.Application(middlewares=[])
     app.add_routes([web.get('/api/v1/leaderboard', handler_leaderboard)])
     app.on_startup.append(init_db)
+    app['deps'] = deps
 
     # run bg tasks
     # app.on_startup.append(run_fetcher)
@@ -50,7 +51,9 @@ def run_api_server():
 if __name__ == '__main__':
     load_dotenv('../../.env')
 
-    run_api_server()
+    deps = Dependencies(db=DB())
+
+    run_api_server(deps)
 
     # import sys
     # if len(sys.argv) >= 2:

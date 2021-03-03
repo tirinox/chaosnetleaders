@@ -15,7 +15,6 @@ class TxStorage(ITxDelegate):
     last_page_counter: int = 0
     overscan_pages: int = 2
     logger = logging.getLogger('TxStorage')
-    last_result: Optional[TxParseResult] = None
     jump_down_flag: bool = False
 
     async def on_scan_start(self, scanner: TxScanner):
@@ -29,8 +28,8 @@ class TxStorage(ITxDelegate):
                 all_stale = False
 
         # save last results for statistics
-        if not self.last_result or tx_results.total_count:
-            self.last_result = tx_results
+        if not self.deps.last_tx_result or tx_results.total_count:
+            self.deps.last_tx_result = tx_results
 
         progress, n_local, n_remote = await self.scan_progress()
         if n_remote:
@@ -56,7 +55,7 @@ class TxStorage(ITxDelegate):
         return True
 
     async def scan_progress(self):
-        n_local = await ThorTx.count_of_transactions_for_network(self.last_result.network_id)
-        n_remote = self.last_result.total_count
+        n_local = await ThorTx.count_of_transactions_for_network(self.deps.last_tx_result.network_id)
+        n_remote = self.deps.last_tx_result.total_count
         ratio = n_local / n_remote if n_remote else 0.0
         return ratio, n_local, n_remote

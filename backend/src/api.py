@@ -1,5 +1,8 @@
+from dataclasses import dataclass
+
 from aiohttp import web
 
+from helpers.deps import Dependencies
 from helpers.utils import error_guard
 
 BOARD_LIMIT = 100
@@ -43,23 +46,36 @@ MAX_TS = 2_147_483_647
 #         'currency': currency,
 #     })
 
-@error_guard
-async def handler_leaderboard(request):
-    start_timestamp = int(request.rel_url.query.get('since') or 0)
-    final_timestamp = int(request.rel_url.query.get('to') or 0)
+@dataclass
+class API:
+    deps: Dependencies
 
-    currency = request.rel_url.query.get('currency')
-    if currency not in ('rune', 'usd'):
-        currency = 'rune'
+    @error_guard
+    async def handler_leaderboard(self, request):
+        start_timestamp = int(request.rel_url.query.get('since') or 0)
+        final_timestamp = int(request.rel_url.query.get('to') or 0)
 
-    if final_timestamp <= 0:
-        final_timestamp = MAX_TS
+        currency = request.rel_url.query.get('currency')
+        if currency not in ('rune', 'usd'):
+            currency = 'rune'
 
-    limit = int(request.rel_url.query.get('limit') or BOARD_LIMIT)
-    offset = int(request.rel_url.query.get('offset') or 0)
+        if final_timestamp <= 0:
+            final_timestamp = MAX_TS
 
-    limit = min(limit, BOARD_LIMIT)
+        limit = int(request.rel_url.query.get('limit') or BOARD_LIMIT)
+        offset = int(request.rel_url.query.get('offset') or 0)
 
-    return web.json_response({
-        'todo': 'work in progress'
-    })
+        limit = min(limit, BOARD_LIMIT)
+
+        return web.json_response({
+            'todo': 'work in progress'
+        })
+
+    @error_guard
+    async def handler_sync_progress(self, request):
+        progress, n_local, n_remote = await self.deps.tx_storage.scan_progress()
+        return web.json_response({
+            'progress': 100 * progress,
+            'local_tx_count': n_local,
+            'remote_tx_count': n_remote
+        })

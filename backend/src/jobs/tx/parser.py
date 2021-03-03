@@ -22,6 +22,9 @@ class TxParseResult(NamedTuple):
 
 
 class TxParserBase(metaclass=ABCMeta):
+    def __init__(self, network_id):
+        self.network_id = network_id
+
     @abstractmethod
     def parse_tx_response(self, response: dict) -> TxParseResult:
         ...
@@ -155,7 +158,6 @@ class TxParserV1(TxParserBase):
             events = r.get('events', {})
 
             txs.append(ThorTx(
-                id=0,
                 block_height=int(r.get('height', 0)),
                 hash=tx_hash,
                 type=tx_type,
@@ -172,6 +174,7 @@ class TxParserV1(TxParserBase):
                 fee=float(events.get('fee', 0)) * mult,
                 slip=float(events.get('slip', 0)),
                 liq_units=float(events.get('stakeUnits', 0)) * mult,
+                network=self.network_id,
             ))
 
         count = int(response.get('count', 0))
@@ -237,7 +240,6 @@ class TxParserV2(TxParserBase):
                 liq_units = int(metadata.get('addLiquidity', {}).get('liquidityUnits', 0)) * mult
 
             txs.append(ThorTx(
-                id=0,
                 block_height=int(r.get('height', 0)),
                 hash=tx_hash,
                 type=tx_type,
@@ -254,6 +256,7 @@ class TxParserV2(TxParserBase):
                 fee=fee,
                 slip=slip,
                 liq_units=liq_units,
+                network=self.network_id,
             ))
 
         return TxParseResult(count, txs, len(raw_txs))

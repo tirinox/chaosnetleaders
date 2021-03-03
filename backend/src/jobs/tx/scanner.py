@@ -10,9 +10,15 @@ from jobs.tx.parser import TxParserBase, TxParseResult
 from models.tx import ThorTx
 
 
+class NetworkIdents:
+    TESTNET_MULTICHAIN = 'testnet-multi'
+    CHAOSNET_MULTICHAIN = 'chaosnet-multi'
+    CHAOSNET_BEP2CHAIN = 'chaosnet-bep2'
+
+
 class MidgardURLGenBase(ABC):
-    def __init__(self, is_test_net=True):
-        self.is_test_net = is_test_net
+    def __init__(self, network_id):
+        self.network_id = network_id
 
     @abstractmethod
     def url_for_tx(self, offset=0, count=50) -> str:
@@ -20,11 +26,17 @@ class MidgardURLGenBase(ABC):
 
 
 class MidgardURLGenV1(MidgardURLGenBase):
+    def __init__(self, network_id=NetworkIdents.CHAOSNET_BEP2CHAIN):
+        super().__init__(network_id)
+
     def url_for_tx(self, offset=0, count=50) -> str:
         return f'https://chaosnet-midgard.bepswap.com/v1/txs?offset={offset}&limit={count}'
 
 
 class MidgardURLGenV2(MidgardURLGenBase):
+    def __init__(self, network_id=NetworkIdents.TESTNET_MULTICHAIN):
+        super().__init__(network_id)
+
     def url_for_tx(self, offset=0, count=50) -> str:
         return f'https://testnet.midgard.thorchain.info/v2/actions?offset={offset}&limit={count}'
 
@@ -49,7 +61,7 @@ class TxScanner:
     session: aiohttp.ClientSession
     parser: TxParserBase
     delegate: Optional[ITxDelegate] = None
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger('TxScanner')
     retries: int = 3
     working: bool = False
     sleep_before_retry: float = 3.0

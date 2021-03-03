@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 
 from helpers.deps import Dependencies
@@ -11,7 +12,8 @@ class TxStorage(ITxDelegate):
     deps: Dependencies
     full_scan: bool = False
     last_page_counter: int = 0
-    overscan_pages: int = 3
+    overscan_pages: int = 2
+    logger = logging.getLogger('TxStorage')
 
     async def on_scan_start(self):
         self.last_page_counter = 0
@@ -27,6 +29,7 @@ class TxStorage(ITxDelegate):
                 self.last_page_counter += 1
                 if self.last_page_counter > self.overscan_pages:
                     return False
+                self.logger.info(f'over scan: {self.last_page_counter} pages')
             else:
                 self.last_page_counter = 0  # reset if found new tx
 

@@ -43,7 +43,7 @@ class MidgardURLGenV2(MidgardURLGenBase):
 
 class ITxDelegate(ABC):
     @abstractmethod
-    async def on_transactions(self, tx_results: TxParseResult) -> bool:
+    async def on_transactions(self, tx_results: TxParseResult, scanner: 'TxScanner') -> bool:
         """
         :param tx_results:
         :return: True if you want to continue scanning otherwise False
@@ -51,7 +51,7 @@ class ITxDelegate(ABC):
         ...
 
     @abstractmethod
-    async def on_scan_start(self):
+    async def on_scan_start(self, scanner: 'TxScanner'):
         ...
 
 
@@ -65,6 +65,9 @@ class TxScanner:
     retries: int = 3
     working: bool = False
     sleep_before_retry: float = 3.0
+    stop_flag: bool = False
+    offset: int = 0
+    batch_size: int = 50
 
     async def request_transaction_list(self, offset=0, limit=50):
         url = self.midgard_url_gen.url_for_tx(offset, limit)
@@ -73,28 +76,37 @@ class TxScanner:
             response_json = await resp.json()
             return self.parser.parse_tx_response(response_json)
 
+    def stop_scan(self):
+        self.working = False
+
+    def rewind(self, to_offset):
+        self.offset = to_offset
+
     async def run_scan(self, start=0, batch_size=50):
         assert self.delegate
+        assert 0 < batch_size <= 50
+        assert start >= 0
+        self.batch_size = batch_size if batch_size else self.batch_size
 
         if self.working:
             self.logger.warning("I'm still working")
             return
         self.working = True
+        self.offset = start
 
-        offset = start
         current_retry = 0
         total_tx_got = 0
 
-        await self.delegate.on_scan_start()
+        await self.delegate.on_scan_start(self)
 
-        while True:
+        while self.working:
             try:
-                tx_results = await self.request_transaction_list(offset, batch_size)
+                tx_results = await self.request_transaction_list(self.offset, batch_size)
 
                 if not tx_results.tx_count_unfiltered:
                     self.logger.warning(f'no more TX, retry once after {self.sleep_before_retry:.1f} sec...')
                     await asyncio.sleep(self.sleep_before_retry)
-                    tx_results = await self.request_transaction_list(offset, batch_size)
+                    tx_results = await self.request_transaction_list(self.offset, batch_size)
 
                 if not tx_results.tx_count_unfiltered:
                     self.logger.warning(f'scan stop. reason: no more tx; total tx = {total_tx_got}')
@@ -102,7 +114,7 @@ class TxScanner:
 
                 total_tx_got += tx_results.tx_count
 
-                to_continue = await self.delegate.on_transactions(tx_results)
+                to_continue = await self.delegate.on_transactions(tx_results, self)
                 if not to_continue:
                     self.logger.info(f'scan stop. reason: delegate insists to stop; total tx = {total_tx_got}')
                     break
@@ -117,7 +129,7 @@ class TxScanner:
                 await asyncio.sleep(self.sleep_before_retry)
             else:
                 current_retry = 0
-                offset += batch_size
+                self.offset += self.batch_size
 
         self.logger.info('finished')
         self.working = False

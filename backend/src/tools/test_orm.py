@@ -4,11 +4,12 @@ import time
 import random
 
 import aiohttp
+from aiohttp import ClientTimeout
 from dotenv import load_dotenv
 
 from helpers.db import DB
 from helpers.deps import Dependencies
-from jobs.tx.parser import TxParserV1, TxParserV2, TxParseResult
+from jobs.tx.parser import TxParserV1, TxParserV2, TxParseResult, dbg_hashes
 from jobs.tx.scanner import TxScanner, MidgardURLGenV1, MidgardURLGenV2, ITxDelegate, NetworkIdents
 from jobs.tx.storage import TxStorage
 from models.tx import ThorTx, ThorTxType
@@ -36,18 +37,18 @@ async def add_test_tx():
 
 
 class TxStorageRandomFail(TxStorage):
-    async def on_transactions(self, tx_results: TxParseResult) -> bool:
+    async def on_transactions(self, tx_results: TxParseResult, scanner: TxScanner) -> bool:
         if random.uniform(0, 1) > 0.5:
             self.logger.error('simalating error')
             raise ValueError('lol fail!')
-        return await super().on_transactions(tx_results)
+        return await super().on_transactions(tx_results, scanner)
 
 
 class TxDelegateDummy(ITxDelegate):
     def __init__(self) -> None:
         self.n = 200
 
-    def on_transactions(self, tx_results: TxParseResult) -> bool:
+    def on_transactions(self, tx_results: TxParseResult, scanner: TxScanner) -> bool:
         self.n -= tx_results.tx_count
 
         for tx in tx_results.txs:
@@ -57,11 +58,12 @@ class TxDelegateDummy(ITxDelegate):
         return self.n > 0
 
 
-async def my_test_scan(deps, version=1, start=0, full_scan=False):
+async def my_test_scan(deps, version=1, start=0, full_scan=False, timeout=5.0):
     url_gen = MidgardURLGenV1(network_id=NetworkIdents.CHAOSNET_BEP2CHAIN) if version == 1 \
         else MidgardURLGenV2(network_id=NetworkIdents.TESTNET_MULTICHAIN)
     parser = TxParserV1(url_gen.network_id) if version == 1 else TxParserV2(url_gen.network_id)
-    async with aiohttp.ClientSession() as session:
+    timeout = ClientTimeout(total=timeout)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
         # storage = TxStorageRandomFail(deps)
         storage = TxStorage(deps)
         storage.full_scan = full_scan
@@ -80,7 +82,7 @@ async def main():
     deps = Dependencies(db=DB())
     await deps.db.start()
 #    await add_test_tx()
-    await my_test_scan(deps, version=2, start=0, full_scan=False)
+    await my_test_scan(deps, version=1, start=0, full_scan=False)
     # await my_test_progress()
 
 

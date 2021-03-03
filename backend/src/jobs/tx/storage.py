@@ -4,7 +4,7 @@ from typing import Optional
 
 from helpers.deps import Dependencies
 from jobs.tx.parser import TxParseResult
-from jobs.tx.scanner import ITxDelegate
+from jobs.tx.scanner import ITxDelegate, TxScanner
 from models.tx import ThorTx
 
 
@@ -16,31 +16,42 @@ class TxStorage(ITxDelegate):
     overscan_pages: int = 2
     logger = logging.getLogger('TxStorage')
     last_result: Optional[TxParseResult] = None
+    jump_down_flag: bool = False
 
-    async def on_scan_start(self):
+    async def on_scan_start(self, scanner: TxScanner):
         self.last_page_counter = 0
+        self.jump_down_flag = False
 
-    async def on_transactions(self, tx_results: TxParseResult) -> bool:
-        any_new_tx = False
+    async def on_transactions(self, tx_results: TxParseResult, scanner: TxScanner) -> bool:
+        all_stale = True
         for tx in tx_results.txs:
             if await tx.save_unique():
-                any_new_tx = True
+                all_stale = False
 
+        # save last results for statistics
         if not self.last_result or tx_results.total_count:
             self.last_result = tx_results
-
-        if not self.full_scan:
-            if not any_new_tx:
-                self.last_page_counter += 1
-                if self.last_page_counter > self.overscan_pages:
-                    return False
-                self.logger.info(f'over scan: {self.last_page_counter} pages')
-            else:
-                self.last_page_counter = 0  # reset if found new tx
 
         progress, n_local, n_remote = await self.scan_progress()
         if n_remote:
             self.logger.info(f'Scan progress: {(progress * 100):.2f} % ({n_local} / {n_remote})')
+
+        if not self.full_scan:
+            if all_stale:
+                self.last_page_counter += 1
+                if self.last_page_counter > self.overscan_pages:
+                    # overscan has failed => try jump ahead skipping all local tx
+                    if not self.jump_down_flag:
+                        jump_location = n_local - scanner.batch_size
+                        self.logger.warning(f'jumping to {jump_location} offset to discover any new tx')
+                        scanner.rewind(jump_location)
+                        self.last_page_counter = 0
+                        self.jump_down_flag = True
+                    else:
+                        return False  # STOP SCANNING
+                self.logger.info(f'over scan: {self.last_page_counter} pages')
+            else:
+                self.last_page_counter = 0  # reset if found new tx
 
         return True
 

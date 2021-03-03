@@ -10,6 +10,7 @@ from models.tx import ThorTx, ThorTxType
 
 logger = logging.getLogger(__name__)
 
+dbg_hashes = set()
 
 class TxParseResult(NamedTuple):
     total_count: int = 0
@@ -218,6 +219,7 @@ class TxParserV2(TxParserBase):
             usd_price1, usd_price2 = 0.0, 0.0
 
             tx_hash = r.get('in', [{}])[0].get('txID', '')
+            dbg_hashes.add(tx_hash)
 
             if tx_type == ThorTxType.TYPE_SWAP:
                 asset1, amount1 = in_tx_list[0].first_asset, in_tx_list[0].first_amount

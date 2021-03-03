@@ -2,7 +2,6 @@ import logging
 from dataclasses import dataclass
 from typing import Optional
 
-from helpers.deps import Dependencies
 from jobs.tx.parser import TxParseResult
 from jobs.tx.scanner import ITxDelegate, TxScanner
 from models.tx import ThorTx
@@ -10,12 +9,12 @@ from models.tx import ThorTx
 
 @dataclass
 class TxStorage(ITxDelegate):
-    deps: Dependencies
     full_scan: bool = False
     last_page_counter: int = 0
     overscan_pages: int = 2
     logger = logging.getLogger('TxStorage')
     jump_down_flag: bool = False
+    last_tx_result: Optional[TxParseResult] = None
 
     async def on_scan_start(self, scanner: TxScanner):
         self.last_page_counter = 0
@@ -28,8 +27,8 @@ class TxStorage(ITxDelegate):
                 all_stale = False
 
         # save last results for statistics
-        if not self.deps.last_tx_result or tx_results.total_count:
-            self.deps.last_tx_result = tx_results
+        if not self.last_tx_result or tx_results.total_count:
+            self.last_tx_result = tx_results
 
         progress, n_local, n_remote = await self.scan_progress()
         if n_remote:
@@ -55,7 +54,7 @@ class TxStorage(ITxDelegate):
         return True
 
     async def scan_progress(self):
-        n_local = await ThorTx.count_of_transactions_for_network(self.deps.last_tx_result.network_id)
-        n_remote = self.deps.last_tx_result.total_count
+        n_local = await ThorTx.count_of_transactions_for_network(self.last_tx_result.network_id)
+        n_remote = self.last_tx_result.total_count
         ratio = n_local / n_remote if n_remote else 0.0
         return ratio, n_local, n_remote

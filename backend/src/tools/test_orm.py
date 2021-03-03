@@ -1,15 +1,14 @@
 import asyncio
 import logging
-import time
 import random
+import time
 
 import aiohttp
 from aiohttp import ClientTimeout
 from dotenv import load_dotenv
 
 from helpers.db import DB
-from helpers.deps import Dependencies
-from jobs.tx.parser import TxParserV1, TxParserV2, TxParseResult, dbg_hashes
+from jobs.tx.parser import TxParserV1, TxParserV2, TxParseResult
 from jobs.tx.scanner import TxScanner, MidgardURLGenV1, MidgardURLGenV2, ITxDelegate, NetworkIdents
 from jobs.tx.storage import TxStorage
 from models.tx import ThorTx, ThorTxType
@@ -58,14 +57,14 @@ class TxDelegateDummy(ITxDelegate):
         return self.n > 0
 
 
-async def my_test_scan(deps, version=1, start=0, full_scan=False, timeout=5.0):
+async def my_test_scan(db: DB, version=1, start=0, full_scan=False, timeout=5.0):
     url_gen = MidgardURLGenV1(network_id=NetworkIdents.CHAOSNET_BEP2CHAIN) if version == 1 \
         else MidgardURLGenV2(network_id=NetworkIdents.TESTNET_MULTICHAIN)
     parser = TxParserV1(url_gen.network_id) if version == 1 else TxParserV2(url_gen.network_id)
     timeout = ClientTimeout(total=timeout)
     async with aiohttp.ClientSession(timeout=timeout) as session:
-        # storage = TxStorageRandomFail(deps)
-        storage = TxStorage(deps)
+        # storage = TxStorageRandomFail()
+        storage = TxStorage()
         storage.full_scan = full_scan
         scanner = TxScanner(url_gen, session, parser, delegate=storage)
         await scanner.run_scan(start=start)
@@ -79,10 +78,10 @@ async def my_test_progress():
 
 
 async def main():
-    deps = Dependencies(db=DB())
-    await deps.db.start()
-#    await add_test_tx()
-    await my_test_scan(deps, version=1, start=0, full_scan=False)
+    db = DB()
+    await db.start()
+    #    await add_test_tx()
+    await my_test_scan(db, version=1, start=0, full_scan=False)
     # await my_test_progress()
 
 

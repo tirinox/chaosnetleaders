@@ -15,6 +15,7 @@ class TxParseResult(NamedTuple):
     total_count: int = 0
     txs: List[ThorTx] = None
     tx_count_unfiltered: int = 0
+    network_id: str = ''
 
     @property
     def tx_count(self):
@@ -52,11 +53,11 @@ class SubTx(typing.NamedTuple):
 
     @property
     def first_asset(self):
-        return self.coins[0].asset
+        return self.coins[0].asset if self.coins else None
 
     @property
     def first_amount(self):
-        return self.coins[0].amount
+        return self.coins[0].amount if self.coins else None
 
     @classmethod
     def join_coins(cls, tx_list: typing.Iterable):
@@ -154,6 +155,9 @@ class TxParserV1(TxParserBase):
                 if input_tx.none_rune_coins:
                     amount1 = input_tx.none_rune_coins[0].amount
                 asset2 = None
+            else:
+                logger.warning(f'unknown tx type: {tx_type}')
+                continue
 
             events = r.get('events', {})
 
@@ -178,7 +182,7 @@ class TxParserV1(TxParserBase):
             ))
 
         count = int(response.get('count', 0))
-        return TxParseResult(count, txs, len(raw_txs))
+        return TxParseResult(count, txs, len(raw_txs), network_id=self.network_id)
 
 
 class TxParserV2(TxParserBase):
@@ -225,7 +229,7 @@ class TxParserV2(TxParserBase):
                 swap_meta = metadata.get('swap', {})
                 slip = int(swap_meta.get('tradeSlip', 0)) / 10000.0
                 fee = int(swap_meta.get('liquidityFee', 0)) * mult
-            elif tx_type == ThorTxType.TYPE_ADD_LIQUIDITY:
+            elif tx_type in (ThorTxType.TYPE_ADD_LIQUIDITY, ThorTxType.TYPE_DONATE):
                 asset1, amount1 = in_tx_list[0].first_asset, in_tx_list[0].first_amount
                 if is_rune(asset1):
                     asset1 = None
@@ -237,7 +241,26 @@ class TxParserV2(TxParserBase):
                         asset2 = None
                         asset1 = pools[0]
                         user_address = in_tx_list[1].address
-                liq_units = int(metadata.get('addLiquidity', {}).get('liquidityUnits', 0)) * mult
+                if tx_type == ThorTxType.TYPE_ADD_LIQUIDITY:
+                    liq_units = int(metadata.get('addLiquidity', {}).get('liquidityUnits', 0)) * mult
+            elif tx_type == ThorTxType.TYPE_WITHDRAW:
+                out_compound = SubTx.join_coins(out_tx_list)
+                not_rune_coin = out_compound.none_rune_coins[0]
+                asset1 = pools[0]
+                amount1 = not_rune_coin.amount
+                asset2 = None
+                amount2 = out_compound.rune_coin.amount
+                liq_units = int(metadata.get('withdraw', {}).get('liquidityUnits', 0)) * mult
+            elif tx_type == ThorTxType.TYPE_REFUND:
+                if in_tx_list:
+                    asset1 = in_tx_list[0].first_asset
+                    amount1 = in_tx_list[0].first_amount
+                if out_tx_list:
+                    asset2 = out_tx_list[0].first_asset
+                    amount2 = out_tx_list[0].first_amount
+            else:
+                logger.warning(f'unknown tx type: {tx_type}')
+                continue
 
             txs.append(ThorTx(
                 block_height=int(r.get('height', 0)),
@@ -259,4 +282,4 @@ class TxParserV2(TxParserBase):
                 network=self.network_id,
             ))
 
-        return TxParseResult(count, txs, len(raw_txs))
+        return TxParseResult(count, txs, len(raw_txs), network_id=self.network_id)

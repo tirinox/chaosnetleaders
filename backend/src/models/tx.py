@@ -82,8 +82,17 @@ class ThorTx(Model):
             return 0
 
     @classmethod
-    def without_volume(cls):
-        return cls.filter(rune_volume=None)
+    def select_by_network(cls, network_id: str):
+        return cls.filter(network=network_id)
+
+    @classmethod
+    async def count_of_transactions_for_network(cls, network_id: str):
+        result = await cls.all().annotate(n=Count("id")).filter(network=network_id).values('n')
+        return result[0]['n']
+
+    @classmethod
+    def swap_without_volume(cls):
+        return cls.filter(type=ThorTxType.TYPE_SWAP, rune_volume=None)
 
     @classmethod
     async def n_without_volume(cls) -> int:
@@ -96,7 +105,7 @@ class ThorTx(Model):
         if n == 0:
             return None, 0
         i = randint(0, n - 1)
-        tx = await cls.without_volume().offset(i).limit(1).first()
+        tx = await cls.swap_without_volume().offset(i).limit(1).first()
         return tx, n
 
     @classmethod
@@ -109,8 +118,8 @@ class ThorTx(Model):
 
     @classmethod
     async def clear_rune_volume(cls):
-        await cls.all().update(rune_volume=None)
+        await cls.all().update(rune_volume=None, usd_volume=None)
 
     @classmethod
-    async def all_for_address(cls, input_address):
-        return await cls.filter(input_address=input_address)
+    async def all_for_address(cls, user_address):
+        return await cls.filter(user_address=user_address)

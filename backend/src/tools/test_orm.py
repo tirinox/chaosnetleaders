@@ -57,7 +57,7 @@ class TxDelegateDummy(ITxDelegate):
         return self.n > 0
 
 
-async def request_tx_page(deps, version=1, start=0, full_scan=False):
+async def my_test_scan(deps, version=1, start=0, full_scan=False):
     url_gen = MidgardURLGenV1(network_id=NetworkIdents.CHAOSNET_BEP2CHAIN) if version == 1 \
         else MidgardURLGenV2(network_id=NetworkIdents.TESTNET_MULTICHAIN)
     parser = TxParserV1(url_gen.network_id) if version == 1 else TxParserV2(url_gen.network_id)
@@ -69,11 +69,19 @@ async def request_tx_page(deps, version=1, start=0, full_scan=False):
         await scanner.run_scan(start=start)
 
 
+async def my_test_progress():
+    n = await ThorTx.count_of_transactions_for_network(NetworkIdents.TESTNET_MULTICHAIN)
+    print(f'TESTNET_MULTICHAIN: {n=}')
+    n = await ThorTx.count_of_transactions_for_network(NetworkIdents.CHAOSNET_BEP2CHAIN)
+    print(f'CHAOSNET_BEP2CHAIN: {n=}')
+
+
 async def main():
     deps = Dependencies(db=DB())
     await deps.db.start()
 #    await add_test_tx()
-    await request_tx_page(deps, version=2, start=0, full_scan=False)
+    await my_test_scan(deps, version=2, start=0, full_scan=False)
+    # await my_test_progress()
 
 
 if __name__ == '__main__':

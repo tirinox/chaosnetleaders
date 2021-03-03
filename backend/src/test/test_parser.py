@@ -4,6 +4,7 @@ import os
 import pytest
 
 from jobs.tx.parser import TxParserV1, SubTx, TxParserV2
+from jobs.tx.scanner import NetworkIdents
 from models.tx import ThorTx, ThorTxType
 
 PATH = './backend/src/test/tx_examples'
@@ -129,7 +130,7 @@ def test_sub_tx_combine(sub_tx1_json, sub_tx2_json, sub_tx3_json):
 
 def test_parser_v1_swap(example_tx_gen):
     example_tx_list = example_tx_gen(name='v1_swap.json')
-    result = TxParserV1().parse_tx_response(example_tx_list)
+    result = TxParserV1(network_id=NetworkIdents.CHAOSNET_BEP2CHAIN).parse_tx_response(example_tx_list)
     assert len(result.txs) == 50
     assert result.total_count == 211078
 
@@ -142,6 +143,7 @@ def test_parser_v1_swap(example_tx_gen):
 
         assert tx.amount1 > 0
         assert tx.amount2 > 0
+        assert tx.network == NetworkIdents.CHAOSNET_BEP2CHAIN
 
     tx0 = result.txs[0]
     assert tx0.date == 1613413527
@@ -157,7 +159,7 @@ def test_parser_v1_swap(example_tx_gen):
 def test_parser_v1_double(example_tx_gen):
     example_tx_list = example_tx_gen(name='v1_dbl_swap.json')
 
-    result = TxParserV1().parse_tx_response(example_tx_list)
+    result = TxParserV1(network_id=NetworkIdents.CHAOSNET_BEP2CHAIN).parse_tx_response(example_tx_list)
     assert len(result.txs) == 50
     assert result.total_count == 135643
 
@@ -171,6 +173,7 @@ def test_parser_v1_double(example_tx_gen):
 
         assert tx.amount1 > 0
         assert tx.amount2 > 0
+        assert tx.network == NetworkIdents.CHAOSNET_BEP2CHAIN
 
     tx0 = result.txs[0]
 
@@ -188,7 +191,7 @@ def test_parser_v1_double(example_tx_gen):
 def test_parser_v1_stake(example_tx_gen):
     example_tx_list = example_tx_gen(name='v1_stake.json')
 
-    result = TxParserV1().parse_tx_response(example_tx_list)
+    result = TxParserV1(network_id=NetworkIdents.CHAOSNET_BEP2CHAIN).parse_tx_response(example_tx_list)
     assert len(result.txs) == 42
     assert result.total_count == 21791
 
@@ -199,6 +202,7 @@ def test_parser_v1_stake(example_tx_gen):
         assert tx.type == ThorTxType.TYPE_ADD_LIQUIDITY
         assert tx.amount1 > 0 or tx.amount2 > 0
         assert tx.asset1 is not None
+        assert tx.network == NetworkIdents.CHAOSNET_BEP2CHAIN
 
     tx0 = result.txs[0]
 
@@ -230,7 +234,7 @@ def test_parser_v1_stake(example_tx_gen):
 def test_parser_v1_unstake(example_tx_gen):
     example_tx_list = example_tx_gen(name='v1_unstake.json')
 
-    result = TxParserV1().parse_tx_response(example_tx_list)
+    result = TxParserV1(network_id=NetworkIdents.CHAOSNET_BEP2CHAIN).parse_tx_response(example_tx_list)
     assert len(result.txs) == 24  # 18 are pending!
     assert result.total_count == 12500
 
@@ -242,6 +246,7 @@ def test_parser_v1_unstake(example_tx_gen):
         assert tx.amount1 > 0 and tx.amount2 > 0
         assert tx.asset1 is not None
         assert tx.asset2 is None
+        assert tx.network == NetworkIdents.CHAOSNET_BEP2CHAIN
 
     tx0 = result.txs[0]
 
@@ -255,7 +260,7 @@ def test_parser_v1_unstake(example_tx_gen):
 def test_parser_v1_add(example_tx_gen):
     example_tx_list = example_tx_gen(name='v1_add.json')
 
-    result = TxParserV1().parse_tx_response(example_tx_list)
+    result = TxParserV1(network_id=NetworkIdents.CHAOSNET_BEP2CHAIN).parse_tx_response(example_tx_list)
 
     assert len(result.txs) == 36
     assert result.total_count == 36
@@ -268,6 +273,7 @@ def test_parser_v1_add(example_tx_gen):
         assert tx.amount1 > 0 or tx.amount2 > 0
         assert tx.asset1 is not None
         assert tx.liq_units == 0 and tx.slip == 0.0 and tx.fee == 0
+        assert tx.network == NetworkIdents.CHAOSNET_BEP2CHAIN
 
     tx0 = result.txs[0]
 
@@ -280,7 +286,7 @@ def test_parser_v1_add(example_tx_gen):
 def test_parser_v1_refund(example_tx_gen):
     example_tx_list = example_tx_gen(name='v1_refund.json')
 
-    result = TxParserV1().parse_tx_response(example_tx_list)
+    result = TxParserV1(network_id=NetworkIdents.CHAOSNET_BEP2CHAIN).parse_tx_response(example_tx_list)
 
     assert len(result.txs) == 13
     assert result.total_count == 3314
@@ -290,6 +296,7 @@ def test_parser_v1_refund(example_tx_gen):
         assert tx.block_height > 0
         assert tx.date > 0
         assert tx.type == ThorTxType.TYPE_REFUND
+        assert tx.network == NetworkIdents.CHAOSNET_BEP2CHAIN
 
     tx0 = result.txs[0]
     assert tx0.user_address == 'bnb143cx0wzff603u29hvvvnq00hmr9tx9p7n4tfdr'
@@ -303,7 +310,7 @@ def test_parser_v1_refund(example_tx_gen):
 
 def test_parser_v2_swap(example_tx_gen):
     example_tx_list = example_tx_gen(name='v2_swap.json')
-    result = TxParserV2().parse_tx_response(example_tx_list)
+    result = TxParserV2(network_id=NetworkIdents.TESTNET_MULTICHAIN).parse_tx_response(example_tx_list)
     assert len(result.txs) == 30
     assert result.total_count == 812
 
@@ -345,7 +352,7 @@ def test_parser_v2_swap(example_tx_gen):
 
 def test_parser_v2_add(example_tx_gen):
     example_tx_list = example_tx_gen(name='v2_add.json')
-    result = TxParserV2().parse_tx_response(example_tx_list)
+    result = TxParserV2(network_id=NetworkIdents.TESTNET_MULTICHAIN).parse_tx_response(example_tx_list)
     assert len(result.txs) == 29
     assert result.total_count == 262
 
@@ -386,3 +393,53 @@ def test_parser_v2_add(example_tx_gen):
     assert tx_bnb_only.asset1 == 'BNB.BNB'
     assert tx_bnb_only.amount1 == pytest.approx(1925000 / DIV)
     assert tx_bnb_only.asset2 is None
+
+
+def test_parser_v2_refund(example_tx_gen):
+    example_tx_list = example_tx_gen(name='v2_refund.json')
+    result = TxParserV2(network_id=NetworkIdents.TESTNET_MULTICHAIN).parse_tx_response(example_tx_list)
+    assert len(result.txs) == 30
+    assert result.total_count == 292
+
+    for tx in result.txs:
+        assert tx.block_height > 0
+        assert tx.date > 0
+        assert tx.asset1 is not None or tx.asset2 is not None
+        assert tx.type == ThorTxType.TYPE_REFUND
+        assert tx.amount1 > 0 or tx.amount2 > 0
+        assert tx.hash
+
+    tx0 = result.txs[0]  # both, rune first
+    assert tx0.block_height == 285240
+    assert tx0.user_address == 'tbnb1luw9phmu48ms083wtvrl80pd839gj84pm64cpp'
+    assert tx0.liq_units == 0.0
+    assert tx0.asset1 == 'BNB.BNB'
+    assert tx0.amount1 == pytest.approx(10000000 / DIV)
+    assert tx0.asset2 == "BNB.BNB"
+    assert tx0.amount2 == pytest.approx(9887500 / DIV)
+    assert tx0.hash == 'ABF39ED2E295D5115201CAB5F317A8A3FEC3E05C916D8190EABFD1060D990DC6'
+
+
+def test_parser_v2_withdraw(example_tx_gen):
+    example_tx_list = example_tx_gen(name='v2_withdraw.json')
+    result = TxParserV2(network_id=NetworkIdents.TESTNET_MULTICHAIN).parse_tx_response(example_tx_list)
+    assert len(result.txs) == 29
+    assert result.total_count == 98
+
+    for tx in result.txs:
+        assert tx.block_height > 0
+        assert tx.date > 0
+        assert tx.asset1 is not None or tx.asset2 is not None
+        assert tx.type == ThorTxType.TYPE_WITHDRAW
+        assert tx.amount1 > 0 and tx.amount2 > 0
+        assert tx.hash
+
+    tx0 = result.txs[0]  # both, rune first
+    assert tx0.block_height == 279695
+    assert tx0.user_address == 'tthor1qkd5f9xh2g87wmjc620uf5w08ygdx4etu0u9fs'
+    assert tx0.liq_units == pytest.approx(-350035000000 / DIV)
+    assert tx0.asset1 == 'LTC.LTC'
+    assert tx0.amount1 == pytest.approx(8827053308 / DIV)
+    assert tx0.asset2 is None
+    assert tx0.amount2 == pytest.approx(1976877735290 / DIV)
+    assert tx0.hash == 'ACD20E38D92D7C6FC68EA7702BC606C5D3809C8D7E137317FDC734D952414972'

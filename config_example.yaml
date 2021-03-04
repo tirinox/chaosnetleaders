@@ -20,3 +20,8 @@ thorchain:
       batch: 50
       over_scan_pages: 10
       retries: 3
+      sleep_before_retry: 3s
+
+  value_filler:
+    batch: 1000
+    retries: 3

@@ -48,10 +48,11 @@ class ThorTx(Model):
     fee = fields.FloatField(default=0.0)
     slip = fields.FloatField(default=0.0)
     liq_units = fields.FloatField(default=0.0)
+    process_flags = fields.IntField(default=0, index=True)
 
     def __str__(self):
-        return f"{self.type} @ {datetime.datetime.fromtimestamp(float(self.date))}(#{self.id}: " \
-               f"{self.amount1} {self.asset1} -> {self.amount2} {self.asset2})"
+        return f"{self.type}(@{datetime.datetime.fromtimestamp(float(self.date))}, {self.user_address}: " \
+               f"{self.amount1} {self.asset1 or 'Rune'} -> {self.amount2} {self.asset2 or 'Rune'})"
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -68,9 +69,16 @@ class ThorTx(Model):
             return False
 
     @classmethod
-    async def get_items_with_no_prices(cls, start=0, limit=10):
-        # fixme
-        return await cls.filter(output_usd_price_lte=1e-10, input_usd_price_lte=1e-10).limit(limit).offset(start).all()
+    async def select_not_processed_transactions(cls, network_id, start=0, limit=10):
+        return await cls.filter(network=network_id, process_flags__lte=0) \
+            .order_by('-block_height') \
+            .limit(limit).offset(start)
+
+    def increase_fail_count(self):
+        self.process_flags -= 1
+
+    def set_processed(self):
+        self.process_flags = 1
 
     @classmethod
     async def last_date(cls):
@@ -91,22 +99,9 @@ class ThorTx(Model):
         return result[0]['n']
 
     @classmethod
-    def swap_without_volume(cls):
-        return cls.filter(type=ThorTxType.TYPE_SWAP, rune_volume=None)
-
-    @classmethod
-    async def n_without_volume(cls) -> int:
-        r = await cls.annotate(n=Count('id')).filter(rune_volume=None).values('n')
+    async def count_without_volume(cls, network_id: str) -> int:
+        r = await cls.annotate(n=Count('id')).filter(network=network_id, process_flags__lte=0).values('n')
         return int(r[0]['n'])
-
-    @classmethod
-    async def random_tx_without_volume(cls):
-        n = await cls.n_without_volume()
-        if n == 0:
-            return None, 0
-        i = randint(0, n - 1)
-        tx = await cls.swap_without_volume().offset(i).limit(1).first()
-        return tx, n
 
     @classmethod
     def all_by_date(cls, asc=True):
@@ -117,8 +112,8 @@ class ThorTx(Model):
         await cls.all().delete()
 
     @classmethod
-    async def clear_rune_volume(cls):
-        await cls.all().update(rune_volume=None, usd_volume=None)
+    async def clear_rune_volume(cls, network):
+        await cls.filter(network=network).all().update(rune_volume=None, usd_volume=None, process_flags=0)
 
     @classmethod
     async def all_for_address(cls, user_address):

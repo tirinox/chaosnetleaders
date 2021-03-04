@@ -10,7 +10,6 @@ from helpers.constants import NetworkIdents
 from jobs.tx.parser import TxParserBase, TxParseResult
 
 
-
 class MidgardURLGenBase(ABC):
     def __init__(self, network_id):
         self.network_id = network_id
@@ -49,6 +48,7 @@ class ITxDelegate(ABC):
     @abstractmethod
     async def on_transactions(self, tx_results: TxParseResult, scanner: 'TxScanner') -> bool:
         """
+        :param scanner: TxScanner object
         :param tx_results:
         :return: True if you want to continue scanning otherwise False
         """

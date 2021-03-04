@@ -19,6 +19,8 @@ def get_thor_env_by_network_id(network_id) -> ThorEnvironment:
 @dataclass
 class ValueFiller:
     thor_connector: ThorConnector
+    batch_size: int = 1000
+    retries: int = 3
 
     async def run_job(self):
         ...

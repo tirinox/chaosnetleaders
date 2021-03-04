@@ -2,6 +2,7 @@ import asyncio
 import logging
 import random
 import time
+from collections import Counter
 
 import aiohttp
 from aiohttp import ClientTimeout
@@ -79,7 +80,18 @@ async def my_test_progress():
 
 
 async def my_test_fill_algo():
-    ...
+    network = NetworkIdents.CHAOSNET_BEP2CHAIN
+    n = await ThorTx.count_without_volume(network)
+    print(f'without volume {n=}')
+
+    tx_batch = await ThorTx.select_not_processed_transactions(network, start=3000, limit=100)
+    # print(*tx_batch, sep='\n')
+    blocks = [t.block_height for t in tx_batch]
+    c = Counter(blocks)
+    print(blocks, sep=', ')
+    print(c)
+    # s = ThorTx.filter(network=network).update(rune_volume=0.0, usd_volume=0.0, process_flags=0).sql()
+    # print(s)
 
 
 async def main():

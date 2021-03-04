@@ -24,12 +24,9 @@ class App:
         self.cfg = Config()
         self.db = DB()
         self.tx_storage = TxStorage()
-        self.api = API(self.tx_storage)
-        self.api_port = int(self.cfg.get('api.port', 5000))
 
         self.network_id = self.cfg.as_str('thorchain.network_id', NetworkIdents.TESTNET_MULTICHAIN)
-
-        logging.info(f'Starting Chaosnetleaders backand at port {self.api_port} for network {self.network_id!r}')
+        logging.info(f'Starting Chaosnetleaders backend for network {self.network_id!r}')
 
         self.scanner: Optional[TxScanner] = None
         self.thor: Optional[ThorConnector] = None
@@ -38,7 +35,7 @@ class App:
     async def init_db(self, _):
         await self.db.start()
 
-    async def scanner_job(self, retries, batch_size):
+    async def scanner_job(self, retries, batch_size, sleep_before_retry):
         url_gen = get_url_gen_by_network_id(self.network_id)
         parser = get_parser_by_network_id(self.network_id)
         midgard_time_out = self.cfg.as_float('thorchain.midgard.timeout', 7.1)
@@ -46,7 +43,7 @@ class App:
 
         async with aiohttp.ClientSession(timeout=timeout) as session:
             self.scanner = TxScanner(url_gen, session, parser, delegate=self.tx_storage,
-                                     retries=retries)
+                                     retries=retries, sleep_before_retry=sleep_before_retry)
             await self.scanner.run_scan(start=0, batch_size=batch_size)
 
     async def run_scanner(self, _):
@@ -57,8 +54,9 @@ class App:
         batch_size = cfg.as_int('batch', 49)
         overscan = self.tx_storage.overscan_pages = cfg.as_int('over_scan_pages', 9)
         delay = parse_timespan_to_seconds(cfg.as_str('start_delay', '2s'))
+        sleep_before_retry = parse_timespan_to_seconds(cfg.as_str('sleep_before_retry', '2s'))
         logging.info(f'starting scanner with {period=} sec, {retries=}, {batch_size=}, {delay=} sec, {overscan=} pages')
-        schedule_task_periodically(period, self.scanner_job, delay, retries, batch_size)
+        schedule_task_periodically(period, self.scanner_job, delay, retries, batch_size, sleep_before_retry)
 
     async def fill_job(self):
         thor_time_out = self.cfg.as_float('thorchain.thornode.timeout', 4.2)
@@ -76,9 +74,11 @@ class App:
     def run_server(self):
         app = web.Application(middlewares=[])
 
+        api = API(self.tx_storage)
+
         routes = {
-            '/api/v1/leaderboard': self.api.handler_leaderboard,
-            '/api/v1/progress': self.api.handler_sync_progress
+            '/api/v1/leaderboard': api.handler_leaderboard,
+            '/api/v1/progress': api.handler_sync_progress
         }
 
         for route, handler in routes.items():
@@ -89,7 +89,8 @@ class App:
         app.on_startup.append(self.run_scanner)
         app.on_startup.append(self.run_fill_job)
 
-        web.run_app(app, port=self.api_port)
+        api_port = int(self.cfg.get('api.port', 5000))
+        web.run_app(app, port=api_port)
 
 
 if __name__ == '__main__':

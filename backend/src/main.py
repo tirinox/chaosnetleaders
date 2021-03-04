@@ -4,59 +4,71 @@ from typing import Optional
 
 import aiohttp
 from aiohttp import web, ClientTimeout
-from aiothornode.connector import ThorConnector, ThorEnvironment, \
-    CHAOS_NET_BNB_ENVIRONMENT, TEST_NET_ENVIRONMENT_MULTI_1
-from dotenv import load_dotenv
+from aiothornode.connector import ThorConnector
 
 from api import API
+from helpers.config import Config
+from helpers.datetime import parse_timespan_to_seconds
 from helpers.db import DB
-from jobs.tx.parser import TxParserV1, TxParserV2
-from jobs.tx.scanner import MidgardURLGenV1, NetworkIdents, MidgardURLGenV2, TxScanner
+from helpers.utils import schedule_task_periodically
+from jobs.tx.parser import get_parser_by_network_id
+from jobs.tx.scanner import NetworkIdents, TxScanner, get_url_gen_by_network_id
 from jobs.tx.storage import TxStorage
-from jobs.vauefill import ValueFiller
-
+from jobs.vauefill import ValueFiller, get_thor_env_by_network_id
 
 logging.basicConfig(level=logging.INFO)
 
 
 class App:
     def __init__(self) -> None:
+        self.cfg = Config()
         self.db = DB()
         self.tx_storage = TxStorage()
         self.api = API(self.tx_storage)
-        self.api_port = 5000  # todo: config
-        self.version = 1
-        self.midgard_time_out = 5.0
-        self.thor_time_out = 5.0
+        self.api_port = int(self.cfg.get('api.port', 5000))
+
+        self.network_id = self.cfg.as_str('thorchain.network_id', NetworkIdents.TESTNET_MULTICHAIN)
+
+        logging.info(f'Starting Chaosnetleaders backand at port {self.api_port} for network {self.network_id!r}')
+
         self.scanner: Optional[TxScanner] = None
-        self.thor_env = TEST_NET_ENVIRONMENT_MULTI_1
         self.thor: Optional[ThorConnector] = None
+        self.value_filler: Optional[ValueFiller] = None
 
     async def init_db(self, _):
         await self.db.start()
 
-    async def scanner_job(self):
-        version = 1
-        start = 0
-
-        url_gen = MidgardURLGenV1(network_id=NetworkIdents.CHAOSNET_BEP2CHAIN) if version == 1 \
-            else MidgardURLGenV2(network_id=NetworkIdents.TESTNET_MULTICHAIN)
-        parser = TxParserV1(url_gen.network_id) if version == 1 else TxParserV2(url_gen.network_id)
-
-        timeout = ClientTimeout(total=self.midgard_time_out)
+    async def scanner_job(self, retries, batch_size):
+        url_gen = get_url_gen_by_network_id(self.network_id)
+        parser = get_parser_by_network_id(self.network_id)
+        midgard_time_out = self.cfg.as_float('thorchain.midgard.timeout', 7.1)
+        timeout = ClientTimeout(total=midgard_time_out)
 
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            self.scanner = TxScanner(url_gen, session, parser, delegate=self.tx_storage)
-            await self.scanner.run_scan(start=start)
+            self.scanner = TxScanner(url_gen, session, parser, delegate=self.tx_storage,
+                                     retries=retries)
+            await self.scanner.run_scan(start=0, batch_size=batch_size)
 
     async def run_scanner(self, _):
-        timeout = ClientTimeout(total=self.thor_time_out)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            self.thor = ThorConnector(self.thor_env, session)
-            asyncio.create_task(self.scanner_job())
+        cfg = self.cfg.get('thorchain.scanner.tx')
+        period = parse_timespan_to_seconds(cfg.as_str('period', '66s'))
+        assert period >= 0.0
+        retries = cfg.as_int('retries', 5)
+        batch_size = cfg.as_int('batch', 49)
+        overscan = self.tx_storage.overscan_pages = cfg.as_int('over_scan_pages', 9)
+        delay = parse_timespan_to_seconds(cfg.as_str('start_delay', '2s'))
+        logging.info(f'starting scanner with {period=} sec, {retries=}, {batch_size=}, {delay=} sec, {overscan=} pages')
+        schedule_task_periodically(period, self.scanner_job, delay, retries, batch_size)
 
     async def fill_job(self):
-        ...
+        thor_time_out = self.cfg.as_float('thorchain.thornode.timeout', 4.2)
+        timeout = ClientTimeout(total=thor_time_out)
+
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            thor_env = get_thor_env_by_network_id(self.network_id)
+            self.thor = ThorConnector(thor_env, session)
+            self.value_filler = ValueFiller(self.thor)
+            await self.value_filler.run_job()
 
     async def run_fill_job(self, _):
         asyncio.create_task(self.fill_job())
@@ -81,8 +93,8 @@ class App:
 
 
 if __name__ == '__main__':
-    load_dotenv('../../.env')
     App().run_server()
+
 
 # async def run_command():
 #     await init_db()

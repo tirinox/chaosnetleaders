@@ -4,7 +4,7 @@ import os
 import pytest
 
 from jobs.tx.parser import TxParserV1, SubTx, TxParserV2
-from jobs.tx.scanner import NetworkIdents
+from helpers.constants import NetworkIdents
 from models.tx import ThorTx, ThorTxType
 
 PATH = './backend/src/test/tx_examples'

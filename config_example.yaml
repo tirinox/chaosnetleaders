@@ -1,0 +1,22 @@
+api:
+  port: 5000
+
+thorchain:
+  #  TESTNET_MULTICHAIN = 'testnet-multi'
+  #  CHAOSNET_MULTICHAIN = 'chaosnet-multi'
+  #  CHAOSNET_BEP2CHAIN = 'chaosnet-bep2'
+  network_id: "testnet-multi"
+
+  midgard:
+    timeout: 7
+
+  thornode:
+    timeout: 5
+
+  scanner:
+    tx:
+      period: 60s
+      start_delay: 2s
+      batch: 50
+      over_scan_pages: 10
+      retries: 3

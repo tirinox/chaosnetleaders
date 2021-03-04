@@ -11,7 +11,7 @@ from models.tx import ThorTx
 class TxStorage(ITxDelegate):
     full_scan: bool = False
     last_page_counter: int = 0
-    overscan_pages: int = 2
+    overscan_pages: int = 10
     logger = logging.getLogger('TxStorage')
     jump_down_flag: bool = False
     last_tx_result: Optional[TxParseResult] = None
@@ -21,10 +21,10 @@ class TxStorage(ITxDelegate):
         self.jump_down_flag = False
 
     async def on_transactions(self, tx_results: TxParseResult, scanner: TxScanner) -> bool:
-        all_stale = True
+        new_count = 0
         for tx in tx_results.txs:
             if await tx.save_unique():
-                all_stale = False
+                new_count += 1
 
         # save last results for statistics
         if not self.last_tx_result or tx_results.total_count:
@@ -32,10 +32,11 @@ class TxStorage(ITxDelegate):
 
         progress, n_local, n_remote = await self.scan_progress()
         if n_remote:
-            self.logger.info(f'Scan progress: {(progress * 100):.2f} % ({n_local} / {n_remote})')
+            self.logger.info(f'Scan progress: {(progress * 100):.2f} % ({n_local} / {n_remote}) and '
+                             f'{new_count} TXS added this iteration')
 
         if not self.full_scan:
-            if all_stale:
+            if new_count == 0:  # all tx are already in out DB
                 self.last_page_counter += 1
                 if self.last_page_counter > self.overscan_pages:
                     # overscan has failed => try jump ahead skipping all local tx

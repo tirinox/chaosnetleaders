@@ -6,14 +6,9 @@ from typing import Optional
 
 import aiohttp
 
+from helpers.constants import NetworkIdents
 from jobs.tx.parser import TxParserBase, TxParseResult
-from models.tx import ThorTx
 
-
-class NetworkIdents:
-    TESTNET_MULTICHAIN = 'testnet-multi'
-    CHAOSNET_MULTICHAIN = 'chaosnet-multi'
-    CHAOSNET_BEP2CHAIN = 'chaosnet-bep2'
 
 
 class MidgardURLGenBase(ABC):
@@ -39,6 +34,15 @@ class MidgardURLGenV2(MidgardURLGenBase):
 
     def url_for_tx(self, offset=0, count=50) -> str:
         return f'https://testnet.midgard.thorchain.info/v2/actions?offset={offset}&limit={count}'
+
+
+def get_url_gen_by_network_id(network_id) -> MidgardURLGenBase:
+    if network_id == NetworkIdents.TESTNET_MULTICHAIN:
+        return MidgardURLGenV2(network_id)
+    elif network_id == NetworkIdents.CHAOSNET_BEP2CHAIN:
+        return MidgardURLGenV1(network_id)
+    else:
+        raise KeyError('unsupported network ID!')
 
 
 class ITxDelegate(ABC):

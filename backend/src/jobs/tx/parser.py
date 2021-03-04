@@ -6,11 +6,13 @@ from typing import List, NamedTuple
 import typing
 
 from helpers.coins import is_rune
+from helpers.constants import NetworkIdents
 from models.tx import ThorTx, ThorTxType
 
 logger = logging.getLogger(__name__)
 
 dbg_hashes = set()
+
 
 class TxParseResult(NamedTuple):
     total_count: int = 0
@@ -285,3 +287,12 @@ class TxParserV2(TxParserBase):
             ))
 
         return TxParseResult(count, txs, len(raw_txs), network_id=self.network_id)
+
+
+def get_parser_by_network_id(network_id) -> TxParserBase:
+    if network_id in (NetworkIdents.TESTNET_MULTICHAIN, NetworkIdents.CHAOSNET_MULTICHAIN):
+        return TxParserV2(network_id)
+    elif network_id == NetworkIdents.CHAOSNET_BEP2CHAIN:
+        return TxParserV1(network_id)
+    else:
+        raise KeyError('unsupported network ID!')

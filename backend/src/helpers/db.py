@@ -1,9 +1,6 @@
 import os
-import time
 
 from tortoise import Tortoise
-
-from models.tx import ThorTx
 
 
 class DB:

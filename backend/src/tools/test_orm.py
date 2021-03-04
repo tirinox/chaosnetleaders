@@ -7,9 +7,10 @@ import aiohttp
 from aiohttp import ClientTimeout
 from dotenv import load_dotenv
 
+from helpers.constants import NetworkIdents
 from helpers.db import DB
 from jobs.tx.parser import TxParserV1, TxParserV2, TxParseResult
-from jobs.tx.scanner import TxScanner, MidgardURLGenV1, MidgardURLGenV2, ITxDelegate, NetworkIdents
+from jobs.tx.scanner import TxScanner, MidgardURLGenV1, MidgardURLGenV2, ITxDelegate
 from jobs.tx.storage import TxStorage
 from models.tx import ThorTx, ThorTxType
 
@@ -77,12 +78,17 @@ async def my_test_progress():
     print(f'CHAOSNET_BEP2CHAIN: {n=}')
 
 
+async def my_test_fill_algo():
+    ...
+
+
 async def main():
     db = DB()
     await db.start()
     #    await add_test_tx()
-    await my_test_scan(db, version=1, start=0, full_scan=False)
+    # await my_test_scan(db, version=1, start=0, full_scan=False)
     # await my_test_progress()
+    await my_test_fill_algo()
 
 
 if __name__ == '__main__':

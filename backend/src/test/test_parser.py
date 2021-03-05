@@ -269,7 +269,7 @@ def test_parser_v1_add(example_tx_gen):
         assert tx.hash
         assert tx.block_height > 0
         assert tx.date > 0
-        assert tx.type == ThorTxType.TYPE_ADD
+        assert tx.type == ThorTxType.OLD_TYPE_ADD
         assert tx.amount1 > 0 or tx.amount2 > 0
         assert tx.asset1 is not None
         assert tx.liq_units == 0 and tx.slip == 0.0 and tx.fee == 0

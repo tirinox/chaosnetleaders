@@ -59,13 +59,16 @@ class App:
         schedule_task_periodically(period, self.scanner_job, delay, retries, batch_size, sleep_before_retry)
 
     async def fill_job(self):
-        thor_time_out = self.cfg.as_float('thorchain.thornode.timeout', 4.2)
+        cfg = self.cfg.get('thorchain')
+        thor_time_out = cfg.as_float('thornode.timeout', 4.2)
         timeout = ClientTimeout(total=thor_time_out)
+        retires = cfg.as_int('value_filler.retries', 3)
+        batch = cfg.as_int('value_filler.batch', 100)
 
         async with aiohttp.ClientSession(timeout=timeout) as session:
             thor_env = get_thor_env_by_network_id(self.network_id)
             self.thor = ThorConnector(thor_env, session)
-            self.value_filler = ValueFiller(self.thor)
+            self.value_filler = ValueFiller(self.thor, self.network_id, batch, retires)
             await self.value_filler.run_job()
 
     async def run_fill_job(self, _):
@@ -86,7 +89,7 @@ class App:
 
         # run bg tasks
         app.on_startup.append(self.init_db)
-        app.on_startup.append(self.run_scanner)
+        # app.on_startup.append(self.run_scanner)  # fixme: uncomment
         app.on_startup.append(self.run_fill_job)
 
         api_port = int(self.cfg.get('api.port', 5000))

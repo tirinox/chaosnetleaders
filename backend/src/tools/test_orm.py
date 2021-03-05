@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO)
 
 async def add_test_tx():
     tx = ThorTx(
-        type=ThorTxType.TYPE_ADD,
+        type=ThorTxType.OLD_TYPE_ADD,
         date=time.time(),
         hash='0xrandomtxhsh24433',
         block_height=43223232,

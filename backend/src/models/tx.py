@@ -1,22 +1,25 @@
 import datetime
-from random import randint
+from typing import Dict
 
+from aiothornode.types import ThorPool
 from tortoise import fields, exceptions, Model
 from tortoise.functions import Max, Count
 
 
 class ThorTxType:
-    TYPE_STAKE = 'stake'  # deprecated (only for v1 parsing)
-    TYPE_ADD = 'add'
+    OLD_TYPE_STAKE = 'stake'  # deprecated (only for v1 parsing)
+
     TYPE_ADD_LIQUIDITY = 'addLiquidity'
 
     TYPE_SWAP = 'swap'
-    TYPE_DOUBLE_SWAP = 'doubleSwap'  # deprecated (only for v1 parsing)
+    OLD_TYPE_DOUBLE_SWAP = 'doubleSwap'  # deprecated (only for v1 parsing)
 
     TYPE_WITHDRAW = 'withdraw'
-    TYPE_UNSTAKE = 'unstake'  # deprecated (only for v1 parsing)
+    OLD_TYPE_UNSTAKE = 'unstake'  # deprecated (only for v1 parsing)
 
+    OLD_TYPE_ADD = 'add'
     TYPE_DONATE = 'donate'
+
     TYPE_REFUND = 'refund'
 
 
@@ -57,6 +60,14 @@ class ThorTx(Model):
     def __repr__(self) -> str:
         return self.__str__()
 
+    @property
+    def none_rune_asset(self):
+        return self.asset1 if not self.asset2 else self.asset2
+
+    @property
+    def number_of_fails(self):
+        return 0 if self.process_flags < 0 else abs(self.process_flags)
+
     async def save_unique(self):
         try:
             old = await self.filter(hash=self.hash)
@@ -69,16 +80,43 @@ class ThorTx(Model):
             return False
 
     @classmethod
-    async def select_not_processed_transactions(cls, network_id, start=0, limit=10):
-        return await cls.filter(network=network_id, process_flags__lte=0) \
-            .order_by('-block_height') \
-            .limit(limit).offset(start)
+    async def select_not_processed_transactions(cls, network_id, start=0, limit=10, max_fails=3, new_first=True):
+        order = '-block_height' if new_first else 'block_height'
+        return await cls.filter(
+            network=network_id,
+            process_flags__lte=0,
+            process_flags__gt=-max_fails).order_by(order).limit(limit).offset(start)
 
     def increase_fail_count(self):
         self.process_flags -= 1
 
     def set_processed(self):
         self.process_flags = 1
+
+    @staticmethod
+    def _usd_price_and_volume(asset, amount, pools: Dict[str, ThorPool], usd_per_rune: float):
+        pool = pools.get(asset, None)
+        usd_price = usd_per_rune if asset is None else pool.runes_per_asset * usd_per_rune
+        usd_volume = usd_price * amount
+        rune_volume = usd_volume / usd_per_rune
+        return usd_price, usd_volume, rune_volume
+
+    def fill_volumes(self, pools: Dict[str, ThorPool], usd_per_rune: float):
+        self.usd_price1, usd_volume1, rune_volume1 = self._usd_price_and_volume(self.asset1, self.amount1, pools,
+                                                                                usd_per_rune)
+        self.usd_price2, usd_volume2, rune_volume2 = self._usd_price_and_volume(self.asset2, self.amount2, pools,
+                                                                                usd_per_rune)
+
+        if self.type in (ThorTxType.TYPE_SWAP, ThorTxType.TYPE_REFUND):
+            # 1. swap, refund: volume = input asset
+            self.rune_volume = rune_volume1
+            self.usd_volume = usd_volume1
+        else:
+            # 2. donate, withdraw, addLiquidity = sum of input and output
+            self.rune_volume = rune_volume1 + rune_volume2
+            self.usd_volume = usd_volume1 + usd_volume2
+
+        # self.set_processed()  # todo!
 
     @classmethod
     async def last_date(cls):

@@ -102,3 +102,7 @@ def simple_hash(items):
     for item in items:
         hasher.update(item)
     return hasher.hexdigest()
+
+
+def weighted_mean(values, weights):
+    return sum(values[g] * weights[g] for g in range(len(values))) / sum(weights)

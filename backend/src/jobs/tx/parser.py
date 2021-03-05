@@ -86,11 +86,11 @@ class TxParserV1(TxParserBase):
 
     @staticmethod
     def fix_tx_type(tx_type):
-        if tx_type == ThorTxType.TYPE_UNSTAKE:
+        if tx_type == ThorTxType.OLD_TYPE_UNSTAKE:
             return ThorTxType.TYPE_WITHDRAW
-        elif tx_type == ThorTxType.TYPE_DOUBLE_SWAP:
+        elif tx_type == ThorTxType.OLD_TYPE_DOUBLE_SWAP:
             return ThorTxType.TYPE_SWAP
-        elif tx_type == ThorTxType.TYPE_STAKE:
+        elif tx_type == ThorTxType.OLD_TYPE_STAKE:
             return ThorTxType.TYPE_ADD_LIQUIDITY
         else:
             return tx_type
@@ -144,7 +144,7 @@ class TxParserV1(TxParserBase):
                 asset2 = None
                 if input_tx.rune_coin:
                     amount2 = input_tx.rune_coin.amount
-            elif tx_type in (ThorTxType.TYPE_ADD, ThorTxType.TYPE_DONATE):
+            elif tx_type in (ThorTxType.OLD_TYPE_ADD, ThorTxType.TYPE_DONATE):
                 asset1 = pool
                 if input_tx.rune_coin:
                     amount2 = input_tx.rune_coin.amount

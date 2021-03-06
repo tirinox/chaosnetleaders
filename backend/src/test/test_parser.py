@@ -4,11 +4,11 @@ import os
 import pytest
 
 from jobs.tx.parser import TxParserV1, SubTx, TxParserV2
-from helpers.constants import NetworkIdents
+from helpers.constants import NetworkIdents, THOR_DIVIDER
 from models.tx import ThorTx, ThorTxType
 
 PATH = './backend/src/test/tx_examples'
-DIV = ThorTx.DIVIDER
+DIV = THOR_DIVIDER
 
 
 def inner_example_tx_gen(name):

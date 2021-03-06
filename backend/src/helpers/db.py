@@ -20,6 +20,7 @@ class DB:
         await Tortoise.init(db_url=self.connect_url, modules={
             "models": [
                 "models.tx",
+                'models.poolcache'
             ]
         })
         await Tortoise.generate_schemas()

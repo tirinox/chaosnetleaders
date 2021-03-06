@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import os
 from typing import List
 
@@ -9,11 +10,16 @@ import datetime
 from aiothornode.connector import ThorConnector
 
 from helpers.coingecko import CoinGeckoPriceProvider
+from helpers.config import Config
 from helpers.constants import NetworkIdents
 from helpers.datetime import MINUTE
+from helpers.db import DB
 from jobs.tx.parser import get_parser_by_network_id
 from jobs.vauefill import get_thor_env_by_network_id, ValueFiller
+from models.poolcache import ThorPoolModel
 from models.tx import ThorTx
+
+logging.basicConfig(level=logging.INFO)
 
 
 def example_tx_gen(name):
@@ -33,6 +39,7 @@ async def my_test_get_gecko_price(t_early=1598617260):
         result55 = await cg.get_historical_rune_price(t_early + 10 * MINUTE)
         assert result55 == result2
 
+
 def load_early_tx(network_id) -> List[ThorTx]:
     parser = get_parser_by_network_id(network_id)
     result = parser.parse_tx_response(example_tx_gen('v1_first_ever_txs.json'))
@@ -45,28 +52,31 @@ async def my_test_test_early_tx_fill():
         thor_env = get_thor_env_by_network_id(network_id)
         thor_env.set_consensus(1, 1)
         thor = ThorConnector(thor_env, session)
-        value_filler = ValueFiller(thor, network_id, 5, 3)
+        value_filler = ValueFiller(thor, network_id, dry_run=True)
 
         txs = load_early_tx(network_id)
-        example_tx = txs[3]
 
-        print(f'Example tx = {example_tx}')
-        pools = await thor.query_pools(example_tx.block_height)
-        print(pools)
+        txs = txs[-5:]
 
-        rune_price = value_filler.calculate_usd_per_rune(pools)
-        print(f'{rune_price=}')
-        cg = CoinGeckoPriceProvider(session)
-        if rune_price is None:
-            print('No usd pool at that moment, requesting gecko')
-            rune_price = await cg.get_historical_rune_price(example_tx.date)
+        for example_tx in txs:
+            print(f'Example tx = {example_tx}')
+            await value_filler.fill_one_tx(example_tx)
+            print(example_tx.__dict__)
+            print('-' * 100)
+        # await value_filler.request_pools_and_cache_them(example_tx.block_height)
+        # await value_filler.request_pools_and_cache_them(200060)
 
-        print(f'{rune_price=}')
-
-
+        # pool = await ThorPoolModel.find_one(network_id, 200060, 'BNB.BUSD-BD1')
+        # print(pool)
+        #
+        # pools = await ThorPoolModel.find_pools(network_id, 200060)
+        # print(len(pools))
 
 
 async def main():
+    Config()
+    await DB().start()
+
     await my_test_test_early_tx_fill()
     # await my_test_get_gecko_price()
 

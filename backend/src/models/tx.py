@@ -5,6 +5,8 @@ from aiothornode.types import ThorPool
 from tortoise import fields, exceptions, Model
 from tortoise.functions import Max, Count
 
+from models.poolcache import ThorPoolModel
+
 
 class ThorTxType:
     OLD_TYPE_STAKE = 'stake'  # deprecated (only for v1 parsing)
@@ -24,8 +26,6 @@ class ThorTxType:
 
 
 class ThorTx(Model):
-    DIVIDER = 100_000_000.0
-
     id = fields.BigIntField(pk=True)
     block_height = fields.BigIntField(default=0, null=True)
     hash = fields.CharField(255, unique=True)
@@ -94,18 +94,29 @@ class ThorTx(Model):
         self.process_flags = 1
 
     @staticmethod
-    def _usd_price_and_volume(asset, amount, pools: Dict[str, ThorPool], usd_per_rune: float):
+    def _usd_price_and_volume(asset, amount, pools: Dict[str, ThorPoolModel], usd_per_rune: float):
         pool = pools.get(asset, None)
+        if not pool or int(pool.balance_rune) == 0 or int(pool.balance_asset) == 0:
+            return None, 0.0, 0.0
         usd_price = usd_per_rune if asset is None else pool.runes_per_asset * usd_per_rune
         usd_volume = usd_price * amount
         rune_volume = usd_volume / usd_per_rune
         return usd_price, usd_volume, rune_volume
 
-    def fill_volumes(self, pools: Dict[str, ThorPool], usd_per_rune: float):
+    def fill_volumes(self, pools: Dict[str, ThorPoolModel], usd_per_rune: float):
+        if not usd_per_rune:
+            return self.increase_fail_count()
+
         self.usd_price1, usd_volume1, rune_volume1 = self._usd_price_and_volume(self.asset1, self.amount1, pools,
                                                                                 usd_per_rune)
         self.usd_price2, usd_volume2, rune_volume2 = self._usd_price_and_volume(self.asset2, self.amount2, pools,
                                                                                 usd_per_rune)
+
+        if self.asset1 and not self.usd_price1:
+            return self.increase_fail_count()
+
+        if self.asset2 and not self.usd_price2:
+            return self.increase_fail_count()
 
         if self.type in (ThorTxType.TYPE_SWAP, ThorTxType.TYPE_REFUND):
             # 1. swap, refund: volume = input asset
@@ -116,7 +127,7 @@ class ThorTx(Model):
             self.rune_volume = rune_volume1 + rune_volume2
             self.usd_volume = usd_volume1 + usd_volume2
 
-        # self.set_processed()  # todo!
+        self.set_processed()
 
     @classmethod
     async def last_date(cls):

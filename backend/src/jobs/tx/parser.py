@@ -1,12 +1,11 @@
 import logging
+import typing
 from abc import ABCMeta, abstractmethod
-from collections import namedtuple, defaultdict
+from collections import defaultdict
 from typing import List, NamedTuple
 
-import typing
-
 from helpers.coins import is_rune
-from helpers.constants import NetworkIdents
+from helpers.constants import NetworkIdents, THOR_DIVIDER, THOR_DIVIDER_INV
 from models.tx import ThorTx, ThorTxType
 
 logger = logging.getLogger(__name__)
@@ -41,7 +40,7 @@ class Coin(typing.NamedTuple):
     @classmethod
     def parse(cls, j):
         return cls(asset=j.get('asset', ''),
-                   amount=int(j.get('amount', 0.0)) / ThorTx.DIVIDER)
+                   amount=int(j.get('amount', 0.0)) / THOR_DIVIDER)
 
 
 class SubTx(typing.NamedTuple):
@@ -98,7 +97,6 @@ class TxParserV1(TxParserBase):
     def parse_tx_response(self, response: dict) -> TxParseResult:
         raw_txs = response.get('txs', [])
         txs = []
-        mult = 1.0 / ThorTx.DIVIDER
 
         for r in raw_txs:
             status = r.get('status', '').lower()
@@ -178,9 +176,9 @@ class TxParserV1(TxParserBase):
                 usd_price2=usd_price2,
                 rune_volume=0.0,
                 usd_volume=0.0,
-                fee=float(events.get('fee', 0)) * mult,
+                fee=float(events.get('fee', 0)) * THOR_DIVIDER_INV,
                 slip=float(events.get('slip', 0)),
-                liq_units=float(events.get('stakeUnits', 0)) * mult,
+                liq_units=float(events.get('stakeUnits', 0)) * THOR_DIVIDER_INV,
                 network=self.network_id,
             ))
 
@@ -196,8 +194,6 @@ class TxParserV2(TxParserBase):
     def parse_tx_response(self, response: dict) -> TxParseResult:
         raw_txs = response.get('actions', [])
         count = int(response.get('count', 0))
-
-        mult = 1.0 / ThorTx.DIVIDER
 
         txs = []
         for r in raw_txs:
@@ -232,7 +228,7 @@ class TxParserV2(TxParserBase):
                     asset2 = None
                 swap_meta = metadata.get('swap', {})
                 slip = int(swap_meta.get('tradeSlip', 0)) / 10000.0
-                fee = int(swap_meta.get('liquidityFee', 0)) * mult
+                fee = int(swap_meta.get('liquidityFee', 0)) * THOR_DIVIDER_INV
             elif tx_type in (ThorTxType.TYPE_ADD_LIQUIDITY, ThorTxType.TYPE_DONATE):
                 asset1, amount1 = in_tx_list[0].first_asset, in_tx_list[0].first_amount
                 if is_rune(asset1):
@@ -246,7 +242,7 @@ class TxParserV2(TxParserBase):
                         asset1 = pools[0]
                         user_address = in_tx_list[1].address
                 if tx_type == ThorTxType.TYPE_ADD_LIQUIDITY:
-                    liq_units = int(metadata.get('addLiquidity', {}).get('liquidityUnits', 0)) * mult
+                    liq_units = int(metadata.get('addLiquidity', {}).get('liquidityUnits', 0)) * THOR_DIVIDER_INV
             elif tx_type == ThorTxType.TYPE_WITHDRAW:
                 out_compound = SubTx.join_coins(out_tx_list)
                 not_rune_coin = out_compound.none_rune_coins[0]
@@ -254,7 +250,7 @@ class TxParserV2(TxParserBase):
                 amount1 = not_rune_coin.amount
                 asset2 = None
                 amount2 = out_compound.rune_coin.amount
-                liq_units = int(metadata.get('withdraw', {}).get('liquidityUnits', 0)) * mult
+                liq_units = int(metadata.get('withdraw', {}).get('liquidityUnits', 0)) * THOR_DIVIDER_INV
             elif tx_type == ThorTxType.TYPE_REFUND:
                 if in_tx_list:
                     asset1 = in_tx_list[0].first_asset

@@ -2,7 +2,8 @@ import asyncio
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Dict, List
+from datetime import datetime
+from typing import List
 
 from aiothornode.connector import ThorConnector, ThorEnvironment, TEST_NET_ENVIRONMENT_MULTI_1, \
     CHAOS_NET_BNB_ENVIRONMENT, ThorPool
@@ -51,24 +52,16 @@ class ValueFiller:
 
         usd_per_rune = self.calculate_usd_per_rune(pools)
         self.logger.info(f'Block: #{block_height}, rune price: ${usd_per_rune:.4f}')
-        #
-        # return
-        #
-        # for tx in tx_list:
-        #     if tx.number_of_fails >= self.max_fails_of_tx:
-        #         continue
-        #
-        #     pool = pool_map[tx.none_rune_asset]
-        #     if not pool:
-        #         tx.increase_fail_count()
-        #         self.logger.warning(f'no pool info for tx {tx}!')
-        #     else:
-        #         tx.fill_volumes(pool, usd_per_rune)
-        #
-        #     await tx.save()
-        #
-        #     # fixme: debug
-        #     print(f'{tx} => {tx.rune_volume} Rune, {tx.usd_volume} $, ProcessFlags = {tx.process_flags}')
+
+        for tx in tx_list:
+            if tx.number_of_fails >= self.max_fails_of_tx:
+                continue
+
+            await tx.fill_volumes(pool_map, usd_per_rune)
+            await tx.save()
+
+            # fixme: debug
+            # print(f'{tx} => {tx.rune_volume} Rune, {tx.usd_volume} $, ProcessFlags = {tx.process_flags}')
 
     async def _job_iterate(self):
         tx_batch = await ThorTx.select_not_processed_transactions(self.network_id,
@@ -77,10 +70,15 @@ class ValueFiller:
                                                                   max_fails=3, new_first=False)
 
         block_to_tx_map = defaultdict(list)
+        min_ts, max_ts = datetime.now().timestamp(), 0
         for tx in tx_batch:
+            min_ts = min(min_ts, tx.date)
+            max_ts = max(max_ts, tx.date)
             block_to_tx_map[tx.block_height].append(tx)
 
-        self.logger.info(f'this batch has {len(tx_batch)} tx to fill; {len(block_to_tx_map)} different blocks')
+        self.logger.info(f'This batch has {len(tx_batch)} tx to fill; '
+                         f'from {datetime.fromtimestamp(min_ts)} to {datetime.fromtimestamp(max_ts)}; '
+                         f'{len(block_to_tx_map)} different blocks.')
 
         for block_height, tx_list in block_to_tx_map.items():
             pool_info = await self.thor_connector.query_pools(block_height)

@@ -119,3 +119,18 @@ def is_time_to_do(h, m):
     now = datetime.now()
     sec_to_next_daily_event = (due_dt - now).total_seconds()
     return sec_to_next_daily_event < 0
+
+
+class TemporalCache:
+    def __init__(self, precision=HOUR):
+        self.precision = precision
+        self.cache = {}
+
+    def key(self, timestamp):
+        return int(timestamp / self.precision)
+
+    def __getitem__(self, timestamp):
+        return self.cache.get(self.key(timestamp))
+
+    def __setitem__(self, timestamp, value):
+        self.cache[self.key(timestamp)] = value

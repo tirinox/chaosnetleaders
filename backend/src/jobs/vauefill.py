@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from collections import defaultdict
+from copy import copy
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List
@@ -16,9 +17,9 @@ from models.tx import ThorTx
 
 def get_thor_env_by_network_id(network_id) -> ThorEnvironment:
     if network_id == NetworkIdents.TESTNET_MULTICHAIN:
-        return TEST_NET_ENVIRONMENT_MULTI_1
+        return copy(TEST_NET_ENVIRONMENT_MULTI_1)
     elif network_id == NetworkIdents.CHAOSNET_BEP2CHAIN:
-        return CHAOS_NET_BNB_ENVIRONMENT
+        return copy(CHAOS_NET_BNB_ENVIRONMENT)
     else:
         # todo: add multi-chain chaosnet
         raise KeyError('unsupported network ID!')

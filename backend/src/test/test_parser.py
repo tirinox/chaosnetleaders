@@ -11,13 +11,14 @@ PATH = './backend/src/test/tx_examples'
 DIV = ThorTx.DIVIDER
 
 
+def inner_example_tx_gen(name):
+    with open(os.path.join(PATH, name), 'r') as f:
+        return json.load(f)
+
+
 @pytest.fixture
 def example_tx_gen():
-    def _example_tx_gen(name):
-        with open(os.path.join(PATH, name), 'r') as f:
-            return json.load(f)
-
-    return _example_tx_gen
+    return inner_example_tx_gen
 
 
 @pytest.fixture

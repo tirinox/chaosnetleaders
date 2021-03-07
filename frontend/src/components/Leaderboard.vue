@@ -40,14 +40,14 @@
         </thead>
 
         <tbody>
-        <tr v-for="(item, index) in data.leaderboard" :key="item.input_address">
+        <tr v-for="(item, index) in data.leaderboard" :key="item.user_address">
           <th scope="row">
             <span class="lead">{{ getPaginatedIndex(index) }}.</span>
           </th>
 
           <td>
-            <a :href="'https://viewblock.io/thorchain/address/' + item.input_address" target="_blank">
-              {{ item.input_address | shortAddress }}
+            <a :href="'https://viewblock.io/thorchain/address/' + item.user_address" target="_blank">
+              {{ item.user_address | shortAddress }}
             </a>
           </td>
 

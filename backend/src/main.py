@@ -64,13 +64,14 @@ class App:
         timeout = ClientTimeout(total=thor_time_out)
         retires = cfg.as_int('value_filler.retries', 3)
         batch = cfg.as_int('value_filler.batch', 100)
+        concurrent_jobs = cfg.as_int('value_filler.concurrent_jobs', 8)
 
         async with aiohttp.ClientSession(timeout=timeout) as session:
             thor_env = get_thor_env_by_network_id(self.network_id)
             thor_env.consensus_min = 1
             thor_env.consensus_total = 1
             self.thor = ThorConnector(thor_env, session)
-            self.value_filler = ValueFiller(self.thor, self.network_id, batch, retires)
+            self.value_filler = ValueFiller(self.thor, self.network_id, batch, retires, concurrent_jobs=concurrent_jobs)
             await self.value_filler.run_concurrent_jobs()
 
     async def run_fill_job(self, _):

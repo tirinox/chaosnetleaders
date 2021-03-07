@@ -1,10 +1,13 @@
 import asyncio
+import datetime
 import logging
+import time
 from copy import copy
 from dataclasses import dataclass
 from typing import List
 
 import names
+import tqdm
 from aiothornode.connector import ThorConnector, ThorEnvironment, TEST_NET_ENVIRONMENT_MULTI_1, \
     CHAOS_NET_BNB_ENVIRONMENT
 from tenacity import retry, stop_after_attempt, RetryError
@@ -12,7 +15,7 @@ from tenacity import retry, stop_after_attempt, RetryError
 from helpers.coingecko import CoinGeckoPriceProvider
 from helpers.coins import STABLE_COINS
 from helpers.constants import NetworkIdents
-from helpers.utils import weighted_mean, chunks, progressbar
+from helpers.utils import weighted_mean, progressbar
 from models.poolcache import ThorPoolModel
 from models.tx import ThorTx
 
@@ -38,6 +41,9 @@ class ValueFiller:
     max_fails_of_tx: int = 4
     dry_run: bool = False
     concurrent_jobs: int = 4
+    _progress_counter: int = 0
+    progress_every_n_iter: int = 50
+    _last_time: float = 0.0
 
     logger = logging.getLogger('ValueFiller')
 
@@ -116,17 +122,28 @@ class ValueFiller:
             self.logger.info(f'Job "{name}" progress: {i}/{len(txs)}.')
 
     async def print_progress(self):
-        total = await ThorTx.count_of_transactions_for_network(self.network_id)
-        n = await ThorTx.count_without_volume(self.network_id)
-        total = max(1, total)
-        n = total - n
-        pb = progressbar(n, total, symbol_width=30)
-        percent = 100 * n / total
-        self.logger.info(f'{pb}: {n} / {total} ({percent:.3f}%)')
+        self._progress_counter += 1
+        if self._progress_counter >= self.progress_every_n_iter:
+            self._progress_counter = 0
+
+            total = await ThorTx.count_of_transactions_for_network(self.network_id)
+            n_to_go = await ThorTx.count_without_volume(self.network_id)
+
+            total = max(1, total)
+            n_done = total - n_to_go
+
+            dt = time.monotonic() - self._last_time
+            time_per_tx = dt / self.progress_every_n_iter
+            time_estimation = time_per_tx * n_to_go
+            tdelta = datetime.timedelta(seconds=time_estimation)
+
+            pb = progressbar(n_done, total, symbol_width=30)
+            percent = 100 * n_done / total
+            self.logger.info(f'{pb}: {n_done} / {total} ({percent:.3f}%) {tdelta}')
+            self._last_time = time.monotonic()
 
     async def run_job(self, shift=0):
         name = names.get_full_name()
-        cnt = 0
         self.logger.info(f'"{name}" job started with shift = {shift}.')
         while True:
             try:
@@ -135,10 +152,7 @@ class ValueFiller:
                     await self.fill_one_tx(tx)
                 else:
                     await asyncio.sleep(1.0)
-                cnt += 1
-                if cnt >= 10:
-                    cnt = 0
-                    await self.print_progress()
+                await self.print_progress()
             except Exception:
                 self.logger.exception(f'"{name}" job iteration failed.')
 

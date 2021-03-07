@@ -25,3 +25,4 @@ thorchain:
   value_filler:
     batch: 1000
     retries: 3
+    concurrent_jobs: 6

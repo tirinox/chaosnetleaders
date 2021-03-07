@@ -80,7 +80,7 @@ class App:
     def run_server(self):
         app = web.Application(middlewares=[])
 
-        api = API(self.tx_storage)
+        api = API(self.network_id, self.tx_storage)
 
         routes = {
             '/api/v1/leaderboard': api.handler_leaderboard,

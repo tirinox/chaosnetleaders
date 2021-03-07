@@ -1,58 +1,62 @@
 from tortoise import Tortoise
 from tortoise.functions import Max
 
-from models.tx import ThorTx
+from helpers.constants import NetworkIdents
+from models.tx import ThorTx, ThorTxType
 
 
-async def leaderboard_raw(from_date=0, to_date=0, offset=0, limit=10, currency='rune'):
+async def leaderboard_raw(network_id, from_date=0, to_date=0, offset=0, limit=10, currency='rune'):
     if currency == 'rune':
-        sum_variable = "`rune_volume`"
-        usd_filled_condition = ''
+        sum_variable = "rune_volume"
     else:
-        sum_variable = "`input_amount` * `input_usd_price`"
-        usd_filled_condition = ' AND `input_usd_price` > 0 '
+        sum_variable = "usd_volume"
+
+    end_date_cond = f' AND date <= {int(to_date)} ' if to_date else ''
 
     q = (f"SELECT "
-         f"`input_address` `input_address`,"
-         f"SUM({sum_variable}) `total_volume`, MAX(`date`) as `date`,"
-         f"COUNT(`id`) `n` "
-         f"FROM `thortx` "
-         f"WHERE `date` >= {int(from_date)} AND `date` <= {int(to_date)} {usd_filled_condition} "
-         f"GROUP BY `input_address` "
-         f"ORDER BY SUM({sum_variable}) "
-         f"DESC LIMIT {int(limit)} OFFSET {int(offset)}")
+         f" user_address,"
+         f" SUM({sum_variable}) total_volume, MAX(date) as date, "
+         f" COUNT(id) n "
+         f" FROM thortx "
+         f" WHERE network = '{network_id}' "
+         f" AND type = '{ThorTxType.TYPE_SWAP}' "
+         f' AND date >= {int(from_date)} {end_date_cond}'
+         f" GROUP BY user_address "
+         f" ORDER BY SUM({sum_variable}) "
+         f" DESC LIMIT {int(limit)} OFFSET {int(offset)}")
 
     conn = Tortoise.get_connection("default")
     return await conn.execute_query_dict(q)
 
 
-async def leaderboard(from_date=0, to_date=0, offset=0, limit=10, currency='rune'):
-    results = await leaderboard_raw(from_date, to_date, offset, limit, currency)
+async def leaderboard(network_id, from_date=0, to_date=0, offset=0, limit=10, currency='rune'):
+    results = await leaderboard_raw(network_id, from_date, to_date, offset, limit, currency)
 
     last_dates = await ThorTx \
         .annotate(last_date=Max('date')) \
-        .filter(date__gte=from_date) \
+        .filter(network=network_id, type=ThorTxType.TYPE_SWAP, date__gte=from_date) \
         .group_by('user_address') \
         .values('user_address', 'last_date')
     last_dates_cache = {e['user_address']: e['last_date'] for e in last_dates}
 
     for item in results:
-        item['date'] = last_dates_cache.get(item['input_address'], item['date'])
+        item['date'] = last_dates_cache.get(item['user_address'], item['date'])
 
     return results
 
 
-async def total_volume(from_date=0, to_date=0, currency='rune'):
+async def total_volume(network_id, from_date=0, to_date=0, currency='rune'):
     try:
         if currency == 'rune':
-            sum_variable = "`rune_volume`"
-            usd_filled_condition = ''
+            sum_variable = "rune_volume"
         else:
-            sum_variable = "`input_amount` * `input_usd_price`"
-            usd_filled_condition = ' AND `input_usd_price` > 0 '
+            sum_variable = "usd_volume"
 
-        sql = (f"SELECT SUM({sum_variable}) `v` FROM `thortx` "
-               f"WHERE `date` >= {int(from_date)} AND `date` <= {int(to_date)} {usd_filled_condition}")
+        sql = (f"SELECT SUM({sum_variable}) v FROM thortx "
+               f"WHERE network = '{network_id}' AND type = '{ThorTxType.TYPE_SWAP}' AND "
+               f"date >= {int(from_date)} ")
+        if to_date:
+            sql += f" AND date <= {int(to_date)} "
 
         conn = Tortoise.get_connection("default")
         result = await conn.execute_query_dict(sql)
@@ -63,6 +67,6 @@ async def total_volume(from_date=0, to_date=0, currency='rune'):
 
 
 async def dbg_print_leaderboard():
-    results = await leaderboard(0)
+    results = await leaderboard(NetworkIdents.CHAOSNET_BEP2CHAIN)
     for place, result in enumerate(results, start=1):
         print(f"#{place}: {result}")

@@ -13,6 +13,7 @@ from helpers.db import DB
 from jobs.tx.parser import TxParserV1, TxParserV2, TxParseResult
 from jobs.tx.scanner import TxScanner, MidgardURLGenV1, MidgardURLGenV2, ITxDelegate
 from jobs.tx.storage import TxStorage
+from leaderboard import total_volume, leaderboard_raw, leaderboard
 from models.tx import ThorTx, ThorTxType
 
 logging.basicConfig(level=logging.INFO)
@@ -94,13 +95,30 @@ async def my_test_fill_algo():
     # print(s)
 
 
+async def my_test_volume():
+    network = NetworkIdents.CHAOSNET_BEP2CHAIN
+    runes = await total_volume(network_id=network)
+    usd = await total_volume(network_id=network, currency='usd')
+    print(f'total volume = {runes}; and usd = {usd}')
+
+
+async def my_test_leaderboard():
+    network = NetworkIdents.CHAOSNET_BEP2CHAIN
+    lb = await leaderboard(network)
+    for place, result in enumerate(lb, start=1):
+        print(f"#{place}: {result}")
+
+
+
 async def main():
     db = DB()
     await db.start()
     #    await add_test_tx()
     # await my_test_scan(db, version=1, start=0, full_scan=False)
     # await my_test_progress()
-    await my_test_fill_algo()
+    # await my_test_fill_algo()
+    await my_test_leaderboard()
+    # await my_test_volume()
 
 
 if __name__ == '__main__':

@@ -71,7 +71,7 @@ class App:
             thor_env.consensus_total = 1
             self.thor = ThorConnector(thor_env, session)
             self.value_filler = ValueFiller(self.thor, self.network_id, batch, retires)
-            await self.value_filler.run_job()
+            await self.value_filler.run_concurrent_jobs()
 
     async def run_fill_job(self, _):
         asyncio.create_task(self.fill_job())
@@ -91,7 +91,7 @@ class App:
 
         # run bg tasks
         app.on_startup.append(self.init_db)
-        # app.on_startup.append(self.run_scanner)  # fixme: uncomment
+        app.on_startup.append(self.run_scanner)  # fixme: uncomment
         app.on_startup.append(self.run_fill_job)
 
         api_port = int(self.cfg.get('api.port', 5000))

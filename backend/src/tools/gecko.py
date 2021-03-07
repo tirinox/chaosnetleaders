@@ -52,17 +52,12 @@ async def my_test_test_early_tx_fill():
         thor_env = get_thor_env_by_network_id(network_id)
         thor_env.set_consensus(1, 1)
         thor = ThorConnector(thor_env, session)
-        value_filler = ValueFiller(thor, network_id, dry_run=True)
+        value_filler = ValueFiller(thor, network_id, dry_run=False, concurrent_jobs=2, batch_size=20)
 
         txs = load_early_tx(network_id)
 
-        txs = txs[-5:]
+        await value_filler.run_concurrent_jobs()
 
-        for example_tx in txs:
-            print(f'Example tx = {example_tx}')
-            await value_filler.fill_one_tx(example_tx)
-            print(example_tx.__dict__)
-            print('-' * 100)
         # await value_filler.request_pools_and_cache_them(example_tx.block_height)
         # await value_filler.request_pools_and_cache_them(200060)
 

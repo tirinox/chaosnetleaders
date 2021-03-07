@@ -106,3 +106,9 @@ def simple_hash(items):
 
 def weighted_mean(values, weights):
     return sum(values[g] * weights[g] for g in range(len(values))) / sum(weights)
+
+
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]

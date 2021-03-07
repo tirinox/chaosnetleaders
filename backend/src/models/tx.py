@@ -1,8 +1,8 @@
 import datetime
-from typing import Dict
+from typing import Dict, Optional, Iterable
 
 from aiothornode.types import ThorPool
-from tortoise import fields, exceptions, Model
+from tortoise import fields, exceptions, Model, BaseDBAsyncClient
 from tortoise.functions import Max, Count
 
 from models.poolcache import ThorPoolModel
@@ -129,6 +129,12 @@ class ThorTx(Model):
 
         self.set_processed()
 
+    async def _pre_save(self, using_db: Optional[BaseDBAsyncClient] = None,
+                        update_fields: Optional[Iterable[str]] = None) -> None:
+        self.usd_price1 = self.usd_price1 or 0.0
+        self.usd_price2 = self.usd_price2 or 0.0
+        return await super()._pre_save(using_db, update_fields)
+
     @classmethod
     async def last_date(cls):
         try:
@@ -167,3 +173,13 @@ class ThorTx(Model):
     @classmethod
     async def all_for_address(cls, user_address):
         return await cls.filter(user_address=user_address)
+
+    @classmethod
+    async def total_distinct_users_count(cls, network_id, from_date=0, to_date=0):
+        r = await cls \
+            .annotate(total_addresses=Count('user_address', distinct=True)) \
+            .filter(date__gte=from_date) \
+            .filter(date__lte=to_date) \
+            .filter(network=network_id) \
+            .values('total_addresses')
+        return r[0]['total_addresses']

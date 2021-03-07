@@ -12,7 +12,7 @@ from tenacity import retry, stop_after_attempt, RetryError
 from helpers.coingecko import CoinGeckoPriceProvider
 from helpers.coins import STABLE_COINS
 from helpers.constants import NetworkIdents
-from helpers.utils import weighted_mean, chunks
+from helpers.utils import weighted_mean, chunks, progressbar
 from models.poolcache import ThorPoolModel
 from models.tx import ThorTx
 
@@ -52,11 +52,7 @@ class ValueFiller:
             return None
         return weighted_mean(rates, depths)
 
-    async def fill_one_tx(self, tx: ThorTx):
-        if not tx:
-            self.logger.error('no tx to fill')
-            return
-
+    async def fill_one_tx(self, tx: ThorTx, name=''):
         pools = await ThorPoolModel.find_pools(self.network_id, tx.block_height)
         if not pools:
             try:
@@ -71,17 +67,17 @@ class ValueFiller:
                     cg_price_provider = CoinGeckoPriceProvider(self.thor_connector.session)
                     usd_per_rune = await cg_price_provider.get_historical_rune_price(tx.date)
             except:
-                self.logger.exception('usd/rune price error')
+                self.logger.exception('"{name}" usd/rune price error')
                 usd_per_rune = None
 
             if not usd_per_rune:
-                self.logger.error(f'no rune price for block #{tx.block_height}')
+                self.logger.error(f'"{name}" no rune price for block #{tx.block_height}')
                 tx.increase_fail_count()
             else:
                 pool_map = {pool.pool: pool for pool in pools}
                 tx.fill_volumes(pool_map, usd_per_rune)
         else:
-            self.logger.error(f'no pools were loaded for block #{tx.block_height}')
+            self.logger.error(f'"{name}" no pools were loaded for block #{tx.block_height}')
             tx.increase_fail_count()
 
         if not self.dry_run:
@@ -104,6 +100,14 @@ class ValueFiller:
                                                                   max_fails=3, new_first=False)
         return tx_batch
 
+    async def get_one_unfilled(self, shift=0):
+        tx_batch = await ThorTx.select_not_processed_transactions(self.network_id,
+                                                                  start=shift,
+                                                                  limit=1,
+                                                                  max_fails=3,
+                                                                  new_first=False)
+        return tx_batch[0] if tx_batch else None
+
     async def run_one_job(self, txs: List[ThorTx]):
         name = names.get_full_name()
         self.logger.info(f'Job "{name}" has got {len(txs)} to fill.')
@@ -111,17 +115,33 @@ class ValueFiller:
             await self.fill_one_tx(tx)
             self.logger.info(f'Job "{name}" progress: {i}/{len(txs)}.')
 
-    async def run_concurrent_jobs(self):
+    async def print_progress(self):
+        total = await ThorTx.count_of_transactions_for_network(self.network_id)
+        n = await ThorTx.count_without_volume(self.network_id)
+        total = max(1, total)
+        n = total - n
+        pb = progressbar(n, total, symbol_width=30)
+        percent = 100 * n / total
+        self.logger.info(f'{pb}: {n} / {total} ({percent:.3f}%)')
+
+    async def run_job(self, shift=0):
+        name = names.get_full_name()
+        cnt = 0
+        self.logger.info(f'"{name}" job started with shift = {shift}.')
         while True:
             try:
-                txs = await self.get_unfilled_tx_batch()
-                tx_chunks = list(chunks(txs, len(txs) // self.concurrent_jobs))
-                tasks = [
-                    self.run_one_job(list(chunk)) for chunk in tx_chunks
-                ]
-                await asyncio.gather(*tasks)
-                await asyncio.sleep(1.0)
+                tx = await self.get_one_unfilled(shift)
+                if tx:
+                    await self.fill_one_tx(tx)
+                else:
+                    await asyncio.sleep(1.0)
+                cnt += 1
+                if cnt >= 10:
+                    cnt = 0
+                    await self.print_progress()
             except Exception:
-                self.logger.exception('run_concurrent_jobs exception')
-                if not self.error_proof:
-                    raise
+                self.logger.exception(f'"{name}" job iteration failed.')
+
+    async def run_concurrent_jobs(self):
+        jobs = [self.run_job(shift) for shift in range(self.concurrent_jobs)]
+        await asyncio.gather(*jobs)

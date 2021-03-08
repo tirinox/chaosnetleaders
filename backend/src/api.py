@@ -5,6 +5,7 @@ from aiohttp import web
 
 from helpers.utils import error_guard
 from jobs.tx.storage import TxStorage
+from jobs.vauefill import ValueFiller
 from leaderboard import leaderboard, total_volume
 from models.tx import ThorTx
 
@@ -16,6 +17,7 @@ MAX_TS = 2_147_483_647
 class API:
     network_id: str
     tx_storage: Optional[TxStorage] = None
+    value_filler: Optional[ValueFiller] = None
 
     @error_guard
     async def handler_leaderboard(self, request):
@@ -53,9 +55,17 @@ class API:
 
     @error_guard
     async def handler_sync_progress(self, request):
-        progress, n_local, n_remote = await self.tx_storage.scan_progress()
+        scan_n_local, scan_n_remote, scan_progress = await self.tx_storage.get_scan_progress()
+        fill_n_done, fill_total, fill_progress = await self.value_filler.get_progress()
         return web.json_response({
-            'progress': 100 * progress,
-            'local_tx_count': n_local,
-            'remote_tx_count': n_remote
+            'tx_sync': {
+                'progress': scan_progress,
+                'local_tx_count': scan_n_local,
+                'remote_tx_count': scan_n_remote
+            },
+            'value_fill': {
+                'progress': fill_progress,
+                'filled_tx': fill_n_done,
+                'total_tx': fill_total
+            }
         })

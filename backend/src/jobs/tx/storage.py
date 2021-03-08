@@ -30,7 +30,7 @@ class TxStorage(ITxDelegate):
         if not self.last_tx_result or tx_results.total_count:
             self.last_tx_result = tx_results
 
-        progress, n_local, n_remote = await self.scan_progress()
+        progress, n_local, n_remote = await self.get_scan_progress()
         if n_remote:
             self.logger.info(f'Scan progress: {(progress * 100):.2f} % ({n_local} / {n_remote}) and '
                              f'{new_count} TXS added this iteration')
@@ -54,8 +54,8 @@ class TxStorage(ITxDelegate):
 
         return True
 
-    async def scan_progress(self):
+    async def get_scan_progress(self):
         n_local = await ThorTx.count_of_transactions_for_network(self.last_tx_result.network_id)
         n_remote = self.last_tx_result.total_count
-        ratio = n_local / n_remote if n_remote else 0.0
-        return ratio, n_local, n_remote
+        percent = 100 * n_local / n_remote if n_remote else 0.0
+        return n_local, n_remote, percent

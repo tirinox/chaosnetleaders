@@ -126,19 +126,15 @@ class ValueFiller:
         if self._progress_counter >= self.progress_every_n_iter:
             self._progress_counter = 0
 
-            total = await ThorTx.count_of_transactions_for_network(self.network_id)
-            n_to_go = await ThorTx.count_without_volume(self.network_id)
-
-            total = max(1, total)
-            n_done = total - n_to_go
+            n_done, total, percent = await self.get_progress()
 
             dt = time.monotonic() - self._last_time
             time_per_tx = dt / self.progress_every_n_iter
-            time_estimation = time_per_tx * n_to_go
+            time_estimation = time_per_tx * (total - n_done)
             tdelta = datetime.timedelta(seconds=time_estimation)
 
             pb = progressbar(n_done, total, symbol_width=30)
-            percent = 100 * n_done / total
+
             self.logger.info(f'{pb}: {n_done} / {total} ({percent:.3f}%) {tdelta}')
             self._last_time = time.monotonic()
 
@@ -159,3 +155,13 @@ class ValueFiller:
     async def run_concurrent_jobs(self):
         jobs = [self.run_job(shift) for shift in range(self.concurrent_jobs)]
         await asyncio.gather(*jobs)
+
+    async def get_progress(self):
+        total = await ThorTx.count_of_transactions_for_network(self.network_id)
+        n_to_go = await ThorTx.count_without_volume(self.network_id)
+
+        total = max(1, total)
+        n_done = total - n_to_go
+        percent = 100 * n_done / total
+        return n_done, total, percent
+

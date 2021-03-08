@@ -31,6 +31,7 @@ class App:
         self.scanner: Optional[TxScanner] = None
         self.thor: Optional[ThorConnector] = None
         self.value_filler: Optional[ValueFiller] = None
+        self.api: Optional[API] = None
 
     async def init_db(self, _):
         await self.db.start()
@@ -72,6 +73,7 @@ class App:
             thor_env.consensus_total = 1
             self.thor = ThorConnector(thor_env, session)
             self.value_filler = ValueFiller(self.thor, self.network_id, batch, retires, concurrent_jobs=concurrent_jobs)
+            self.api.value_filler = self.value_filler
             await self.value_filler.run_concurrent_jobs()
 
     async def run_fill_job(self, _):
@@ -80,11 +82,11 @@ class App:
     def run_server(self):
         app = web.Application(middlewares=[])
 
-        api = API(self.network_id, self.tx_storage)
+        self.api = API(self.network_id, self.tx_storage)
 
         routes = {
-            '/api/v1/leaderboard': api.handler_leaderboard,
-            '/api/v1/progress': api.handler_sync_progress
+            '/api/v1/leaderboard': self.api.handler_leaderboard,
+            '/api/v1/progress': self.api.handler_sync_progress
         }
 
         for route, handler in routes.items():

@@ -102,14 +102,15 @@ class ValueFiller:
         tx_batch = await ThorTx.select_not_processed_transactions(self.network_id,
                                                                   start=0,
                                                                   limit=n,
-                                                                  max_fails=3, new_first=False)
+                                                                  max_fails=self.max_fails_of_tx,
+                                                                  new_first=False)
         return tx_batch
 
     async def get_one_unfilled(self, shift=0):
         tx_batch = await ThorTx.select_not_processed_transactions(self.network_id,
                                                                   start=shift,
                                                                   limit=1,
-                                                                  max_fails=3,
+                                                                  max_fails=self.max_fails_of_tx,
                                                                   new_first=False)
         return tx_batch[0] if tx_batch else None
 
@@ -157,7 +158,7 @@ class ValueFiller:
 
     async def get_progress(self):
         total = await ThorTx.count_of_transactions_for_network(self.network_id)
-        n_to_go = await ThorTx.count_without_volume(self.network_id)
+        n_to_go = await ThorTx.count_without_volume(self.network_id, self.max_fails_of_tx)
 
         total = max(1, total)
         n_done = total - n_to_go

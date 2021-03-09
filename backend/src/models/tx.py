@@ -154,8 +154,11 @@ class ThorTx(Model):
         return result[0]['n']
 
     @classmethod
-    async def count_without_volume(cls, network_id: str) -> int:
-        r = await cls.annotate(n=Count('id')).filter(network=network_id, process_flags__lte=0).values('n')
+    async def count_without_volume(cls, network_id: str, max_fails) -> int:
+        r = await cls.annotate(n=Count('id')).filter(network=network_id,
+                                                     process_flags__lte=0,
+                                                     process_flags__gt=max_fails,
+                                                     ).values('n')
         return int(r[0]['n'])
 
     @classmethod

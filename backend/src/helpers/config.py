@@ -56,6 +56,8 @@ class Config(SubConfig):
     def __init__(self, name=None, data=None):
         load_dotenv(self.DEFAULT_ENV_FILE)
 
+        print('-------')
+
         if not data:
             if name:
                 self._config_name = name

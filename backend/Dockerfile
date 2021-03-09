@@ -24,4 +24,4 @@ RUN pip install -r requirements.txt
 EXPOSE 5000
 
 # command to run on container start
-CMD [ "python", "/app/src/main.py" ]
+CMD [ "python", "/app/src/main.py", "/config/config.yaml" ]

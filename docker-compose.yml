@@ -14,13 +14,15 @@ services:
     volumes:
       - ./backend:/app
       - .env/:/app/.env
-      - config.yaml:/app/config.yaml
+      - ./config.yaml:/config/config.yaml
     restart: on-failure
     env_file: .env
 
   frontend:
     image: node:14-alpine
     command: npm run serve
+    depends_on:
+      - backend
     volumes:
       - ./.env:/app/.env:ro
       - ./frontend:/app

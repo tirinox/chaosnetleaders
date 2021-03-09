@@ -34,7 +34,6 @@ def get_thor_env_by_network_id(network_id) -> ThorEnvironment:
 class ValueFiller:
     thor_connector: ThorConnector
     network_id: str
-    batch_size: int = 1000
     retries: int = 3
     error_proof: bool = False
     iteration_delay: float = 1.0  # sec
@@ -58,7 +57,7 @@ class ValueFiller:
             return None
         return weighted_mean(rates, depths)
 
-    async def fill_one_tx(self, tx: ThorTx, name=''):
+    async def fill_one_tx(self, tx: ThorTx, name):
         pools = await ThorPoolModel.find_pools(self.network_id, tx.block_height)
         if not pools:
             try:
@@ -73,7 +72,7 @@ class ValueFiller:
                     cg_price_provider = CoinGeckoPriceProvider(self.thor_connector.session)
                     usd_per_rune = await cg_price_provider.get_historical_rune_price(tx.date)
             except:
-                self.logger.exception('"{name}" usd/rune price error')
+                self.logger.exception(f'"{name}" usd/rune price error')
                 usd_per_rune = None
 
             if not usd_per_rune:
@@ -99,10 +98,10 @@ class ValueFiller:
             results.append(pool_model)
         return results
 
-    async def get_unfilled_tx_batch(self):
+    async def get_unfilled_tx_batch(self, n):
         tx_batch = await ThorTx.select_not_processed_transactions(self.network_id,
                                                                   start=0,
-                                                                  limit=self.batch_size,
+                                                                  limit=n,
                                                                   max_fails=3, new_first=False)
         return tx_batch
 
@@ -118,7 +117,7 @@ class ValueFiller:
         name = names.get_full_name()
         self.logger.info(f'Job "{name}" has got {len(txs)} to fill.')
         for i, tx in enumerate(txs, start=1):
-            await self.fill_one_tx(tx)
+            await self.fill_one_tx(tx, name)
             self.logger.info(f'Job "{name}" progress: {i}/{len(txs)}.')
 
     async def print_progress(self):
@@ -145,7 +144,7 @@ class ValueFiller:
             try:
                 tx = await self.get_one_unfilled(shift)
                 if tx:
-                    await self.fill_one_tx(tx)
+                    await self.fill_one_tx(tx, name)
                 else:
                     await asyncio.sleep(1.0)
                 await self.print_progress()

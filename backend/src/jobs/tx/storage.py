@@ -30,9 +30,9 @@ class TxStorage(ITxDelegate):
         if not self.last_tx_result or tx_results.total_count:
             self.last_tx_result = tx_results
 
-        progress, n_local, n_remote = await self.get_scan_progress()
+        n_local, n_remote, percent = await self.get_scan_progress()
         if n_remote:
-            self.logger.info(f'Scan progress: {(progress * 100):.2f} % ({n_local} / {n_remote}) and '
+            self.logger.info(f'Scan progress: {percent:.2f} % ({n_local} / {n_remote}) and '
                              f'{new_count} TXS added this iteration')
 
         if not self.full_scan:

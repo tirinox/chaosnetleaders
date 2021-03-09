@@ -1,6 +1,6 @@
 aiohttp==3.7.4
 aiosqlite==0.16.1
-aiothornode @ git+https://github.com/tirinox/aiothornode@f5f83b0005c3eadccce4461f3185f2d7467e6bfa
+aiothornode @ git+https://github.com/tirinox/aiothornode@abb74eed609ef7a267027ba58887426790f793a1
 async-timeout==3.0.1
 asyncpg==0.22.0
 attrs==20.3.0

@@ -13,7 +13,7 @@ services:
     volumes:
       - ./backend:/app
       - .env/:/app/.env
-      - ./config.yaml:/config.yaml
+      - ./config.yaml:/config/config.yaml
     restart: on-failure
     env_file: .env
 

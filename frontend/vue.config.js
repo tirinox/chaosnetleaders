@@ -1,16 +1,19 @@
 const webpack = require('webpack')
 
+const fs = require('fs')
+const packageJson = fs.readFileSync('./package.json')
+const version = JSON.parse(packageJson).version || 0
+
 module.exports = {
   filenameHashing: true,
-  configureWebpack: config => {
-    return {
-      plugins: [
-        new webpack.DefinePlugin({
-          // eslint-disable-next-line no-undef
-          'APPLICATION_VERSION': JSON.stringify(require('./package.json').version),
-        })
-      ]
-    }
+  configureWebpack: {
+    plugins: [
+      new webpack.DefinePlugin({
+        'process.env': {
+          PACKAGE_VERSION: '"' + version + '"'
+        }
+      })
+    ]
   },
   devServer: {
     proxy: 'http://localhost:5000'

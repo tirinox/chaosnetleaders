@@ -40,7 +40,7 @@ services:
       - ./backend/media/:/media/
       - ./backend/staticfiles/:/staticfiles/
       - ./nginx/prod-mctn.conf:/etc/nginx/nginx.conf:ro
-      - ./letsencrypt:/etc/letsencrypt
+      - "/etc/letsencrypt/live:/etc/letsencrypt:ro"
       - ./frontend/dist/:/dist/
     environment:
       CERTBOT_EMAIL: tirinox@tirinox.ru

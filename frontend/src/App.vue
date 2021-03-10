@@ -3,7 +3,7 @@
     <b-navbar toggleable="md" type="dark" variant="dark" class="mb-5">
       <b-navbar-brand href="#">
         <img src="/img/icons/favicon-32x32.png" class="d-inline-block align-middle nav-logo pr-2" alt="Logo">
-        Chaosnet leaders
+        {{ site_title }}
       </b-navbar-brand>
 
       <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>
@@ -48,7 +48,8 @@ export default {
   name: 'App',
   data () {
     return {
-      selected: 'rune'
+      selected: 'rune',
+      site_title: 'Chaosnet leaders'
     }
   },
   methods: {
@@ -70,7 +71,7 @@ export default {
       ]
     },
     packageJson () {
-      return '0.3.0'
+      return process.env.PACKAGE_VERSION || '0'
     }
   }
 }

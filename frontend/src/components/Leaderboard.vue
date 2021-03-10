@@ -1,7 +1,7 @@
 <template>
   <div class="row">
     <div class="col-12">
-      <h1>Chaosnet Leaderboard</h1>
+      <h1>{{ page_title }}</h1>
 
       <p class="subtitle">
         <b-spinner label="Loading" small v-if="loading"></b-spinner>
@@ -18,8 +18,6 @@
       </p>
 
       <div>
-          <b-button variant="link" v-on:click="navigateToDate('competition')">Competition</b-button>
-          |
           <b-button variant="link" v-on:click="navigateToDate('all')">All time</b-button>
           |
           <b-button variant="link" v-on:click="navigateToDate(30)">Last month</b-button>
@@ -91,8 +89,6 @@ import { nicePercentFormat, volumeFormat } from '@/lib/digits'
 import { shortAddress } from '@/lib/address'
 import { EventBus, ON_CURRENCY_CHANGE } from '@/lib/bus'
 
-const COMPETITION_START_TIMESTAMP = 1599739200  // 12pm UTC, Thursday 10th September 2020
-const COMPETITION_ENDING_TIMESTAMP = 1602158400  // 12pm UTC, Thursday 8th October 2020
 const LIMIT_PER_PAGE = 100
 
 function daysAgo (d) {
@@ -108,7 +104,8 @@ export default {
       data: [],
       loading: false,
       currentPage: 1,
-      itemsPerPage: LIMIT_PER_PAGE
+      itemsPerPage: LIMIT_PER_PAGE,
+      page_title: 'Chaosnet Leaderboard'
     }
   },
 
@@ -136,9 +133,6 @@ export default {
       if (d === 'all') {
         ts_since = -1
         ts_to = -1
-      } else if (d === 'competition') {
-        ts_since = COMPETITION_START_TIMESTAMP
-        ts_to = COMPETITION_ENDING_TIMESTAMP
       } else {
         ts_since = daysAgo(d)
         ts_to = -1

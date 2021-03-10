@@ -43,6 +43,7 @@ class ValueFiller:
     _progress_counter: int = 0
     progress_every_n_iter: int = 50
     _last_time: float = 0.0
+    sleep_on_error: float = 0.5
 
     logger = logging.getLogger('ValueFiller')
 
@@ -106,13 +107,9 @@ class ValueFiller:
                                                                   new_first=False)
         return tx_batch
 
-    async def get_one_unfilled(self, shift=0):
-        tx_batch = await ThorTx.select_not_processed_transactions(self.network_id,
-                                                                  start=shift,
-                                                                  limit=1,
-                                                                  max_fails=self.max_fails_of_tx,
-                                                                  new_first=False)
-        return tx_batch[0] if tx_batch else None
+    async def get_one_unfilled(self):
+        tx = await ThorTx.select_random_unfilled_tx(self.network_id, max_fails=self.max_fails_of_tx)
+        return tx
 
     async def run_one_job(self, txs: List[ThorTx]):
         name = names.get_full_name()
@@ -143,14 +140,15 @@ class ValueFiller:
         self.logger.info(f'"{name}" job started with shift = {shift}.')
         while True:
             try:
-                tx = await self.get_one_unfilled(shift)
+                tx = await self.get_one_unfilled()
                 if tx:
                     await self.fill_one_tx(tx, name)
                 else:
-                    await asyncio.sleep(1.0)
+                    await asyncio.sleep(self.sleep_on_error)
                 await self.print_progress()
             except Exception:
                 self.logger.exception(f'"{name}" job iteration failed.')
+                await asyncio.sleep(self.sleep_on_error)
 
     async def run_concurrent_jobs(self):
         jobs = [self.run_job(shift) for shift in range(self.concurrent_jobs)]

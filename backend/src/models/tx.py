@@ -1,4 +1,5 @@
 import datetime
+import random
 from typing import Dict, Optional, Iterable
 
 from aiothornode.types import ThorPool
@@ -87,6 +88,13 @@ class ThorTx(Model):
             process_flags__lte=0,
             process_flags__gt=-max_fails).order_by(order).limit(limit).offset(start)
 
+    @classmethod
+    async def select_random_unfilled_tx(cls, network_id, max_fails=3):
+        n = await cls.count_of_transactions_for_network(network_id)
+        random_shift = random.randint(0, n)
+        txs = await cls.select_not_processed_transactions(network_id, random_shift, 1, max_fails)
+        return txs[0] if txs else None
+
     def increase_fail_count(self):
         self.process_flags -= 1
 
@@ -157,7 +165,7 @@ class ThorTx(Model):
     async def count_without_volume(cls, network_id: str, max_fails) -> int:
         r = await cls.annotate(n=Count('id')).filter(network=network_id,
                                                      process_flags__lte=0,
-                                                     process_flags__gt=max_fails,
+                                                     process_flags__gt=-max_fails,
                                                      ).values('n')
         return int(r[0]['n'])
 

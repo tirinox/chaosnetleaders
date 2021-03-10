@@ -94,7 +94,7 @@ class App:
 
         # run bg tasks
         app.on_startup.append(self.init_db)
-        app.on_startup.append(self.run_scanner)  # fixme: uncomment
+        app.on_startup.append(self.run_scanner)
         app.on_startup.append(self.run_fill_job)
 
         api_port = int(self.cfg.get('api.port', 5000))
@@ -103,27 +103,3 @@ class App:
 
 if __name__ == '__main__':
     App().run_server()
-
-
-# async def run_command():
-#     await init_db()
-#
-#     command = sys.argv[1]
-#     if command == 'reset-rune-volumes':
-#         print('reset-rune-volumes command is executing...')
-#         await BEPTransaction.clear_rune_volume()
-#     elif command == 'calc-rune-volumes':
-#         print('calc-rune-volumes command is executing...')
-#         vf = ValueFiller()
-#         await vf.run()
-#     else:
-#         logging.error(f'unknown command {command}\n'
-#                       f'available commands are\n'
-#                       f'  reset-rune-volumes'
-#                       f'  calc-rune-volumes')
-
-# import sys
-# if len(sys.argv) >= 2:
-#     asyncio.run(run_command())
-# else:
-#     run_api_server()

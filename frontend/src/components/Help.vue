@@ -4,13 +4,7 @@
     <div class="col-12">
       <h1>Help / info</h1>
       <p>
-        A leaderboard for current BEPSwap trading accounts.
-        The winners of the BEPSwap trading competition will be
-        <a href="https://t.me/thorchain/644" target="_blank" title="Proof">based off</a> this leaderboard.
-        <br>
-        Learn more: <a href="https://medium.com/thorchain/bepswap-trading-competition-c74685878340" target="_blank">
-          BEPSwap trading competition
-        </a>.
+        This is the leaderboard of THORChain traders.
       </p>
       <p>
         This is a tool built by a community member. Source code is available on

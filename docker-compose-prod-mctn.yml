@@ -1,0 +1,46 @@
+version: '3.3'
+
+volumes:
+    db_data: {}
+    letsencrypt:
+
+services:
+  backend:
+    build:
+      context: ./backend
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/app
+      - .env/:/app/.env
+      - ./config.yaml:/config/config.yaml
+    restart: on-failure
+    env_file: .env
+
+  db:
+    image: "postgres:latest"
+    restart: always
+    ports:
+      - 54320:5432
+    env_file: .env
+    volumes:
+      - ./db_data:/var/lib/postgresql/data/chaos
+    environment:
+      PGDATA: /var/lib/postgresql/data/chaos/
+
+  nginx:
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    volumes:
+      - ./backend/media/:/media/
+      - ./backend/staticfiles/:/staticfiles/
+      - ./nginx/prod-mctn.conf:/etc/nginx/nginx.conf:ro
+      - ./letsencrypt:/etc/letsencrypt
+      - ./frontend/dist/:/dist/
+    environment:
+      CERTBOT_EMAIL: tirinox@tirinox.ru

@@ -1,7 +1,7 @@
 <template>
   <div class="row">
     <div class="col-12">
-      <h1>{{ page_title }}</h1>
+      <h1>{{ pageTitle }}</h1>
 
       <p class="subtitle">
         <b-spinner label="Loading" small v-if="loading"></b-spinner>
@@ -88,6 +88,7 @@ import axios from 'axios'
 import { nicePercentFormat, volumeFormat } from '@/lib/digits'
 import { shortAddress } from '@/lib/address'
 import { EventBus, ON_CURRENCY_CHANGE } from '@/lib/bus'
+import {getNetworkId, NETWORK_CHAOSNET_BEP2, NETWORK_CHAOSNET_MUTLI, NETWORK_TESTNET_MULTI} from "@/lib/misc";
 
 const LIMIT_PER_PAGE = 100
 
@@ -104,12 +105,24 @@ export default {
       data: [],
       loading: false,
       currentPage: 1,
-      itemsPerPage: LIMIT_PER_PAGE,
-      page_title: 'Chaosnet Leaderboard'
+      itemsPerPage: LIMIT_PER_PAGE
     }
   },
 
   computed: {
+    pageTitle() {
+      let network = getNetworkId()
+      if(network === NETWORK_CHAOSNET_BEP2) {
+        return 'Chaosnet Leaderboard'
+      } else if(network === NETWORK_CHAOSNET_MUTLI) {
+        return 'Chaosnet Multi-Chain Leaderboard'
+      } else if(network === NETWORK_TESTNET_MULTI) {
+        return 'Testnet Multi-Chain Leaderboard'
+      } else {
+        return 'Unknown network!'
+      }
+    },
+
     realPage () {
       return parseInt(this.$route.query.page, 10) || 0
     },

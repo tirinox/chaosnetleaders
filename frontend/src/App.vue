@@ -71,7 +71,8 @@ export default {
       ]
     },
     packageJson () {
-      return process.env.PACKAGE_VERSION || '0'
+      console.log(' process.env = ',  process.env)
+      return process.env.VUE_APP_VERSION || '0'
     }
   }
 }

@@ -6,6 +6,7 @@ from aiothornode.types import ThorPool
 from tortoise import fields, exceptions, Model, BaseDBAsyncClient
 from tortoise.functions import Max, Count
 
+from helpers.coins import is_rune
 from models.poolcache import ThorPoolModel
 
 
@@ -90,8 +91,8 @@ class ThorTx(Model):
 
     @classmethod
     async def select_random_unfilled_tx(cls, network_id, max_fails=3):
-        n = await cls.count_of_transactions_for_network(network_id)
-        random_shift = random.randint(0, n)
+        n = await cls.count_without_volume(network_id, max_fails)
+        random_shift = random.randint(0, n - 1) if n > 0 else 0
         txs = await cls.select_not_processed_transactions(network_id, random_shift, 1, max_fails)
         return txs[0] if txs else None
 
@@ -103,13 +104,16 @@ class ThorTx(Model):
 
     @staticmethod
     def _usd_price_and_volume(asset, amount, pools: Dict[str, ThorPoolModel], usd_per_rune: float):
-        pool = pools.get(asset, None)
-        if not pool or int(pool.balance_rune) == 0 or int(pool.balance_asset) == 0:
-            return None, 0.0, 0.0
-        usd_price = usd_per_rune if asset is None else pool.runes_per_asset * usd_per_rune
-        usd_volume = usd_price * amount
-        rune_volume = usd_volume / usd_per_rune
-        return usd_price, usd_volume, rune_volume
+        if asset is None or is_rune(asset):
+            return usd_per_rune, amount * usd_per_rune, amount
+        else:
+            pool = pools.get(asset, None)
+            if not pool or int(pool.balance_rune) == 0 or int(pool.balance_asset) == 0:
+                return None, 0.0, 0.0
+            usd_price = usd_per_rune if asset is None else pool.runes_per_asset * usd_per_rune
+            usd_volume = usd_price * amount
+            rune_volume = usd_volume / usd_per_rune
+            return usd_price, usd_volume, rune_volume
 
     def fill_volumes(self, pools: Dict[str, ThorPoolModel], usd_per_rune: float):
         if not usd_per_rune:

@@ -44,7 +44,8 @@
                            :item="item"
                            :place="getLeaderPlace(index)"
                            :currency="currency"
-                           :total-volume="data.chaosnet_volume">
+                           :total-volume="data.chaosnet_volume"
+                           :hide-value="loading">
                 </LeaderRow>
                 </tbody>
             </table>

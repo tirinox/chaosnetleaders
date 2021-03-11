@@ -11,11 +11,15 @@
         </td>
 
         <td>
-            <h5>{{ item.total_volume | volumeFormat | addCurrency(currency) }}</h5>
-            <small class="text-muted">
-                {{ item.total_volume | nicePercentFormat(totalVolume) }} % with
-                {{ item.n }} txs
-            </small>
+            <transition name="fade">
+                <div v-show="!hideValue">
+                    <h5>{{ item.total_volume | volumeFormat | addCurrency(currency) }}</h5>
+                    <small class="text-muted">
+                        {{ item.total_volume | nicePercentFormat(totalVolume) }} % with
+                        {{ item.n }} txs
+                    </small>
+                </div>
+            </transition>
         </td>
 
         <td>
@@ -37,15 +41,16 @@ export default {
         'index',
         'place',
         'totalVolume',
-        'currency'
+        'currency',
+        'hideValue'
     ],
     methods: {
         viewAddressInExplorer(address) {
             if (this.network === NETWORK_CHAOSNET_BEP2) {
                 return 'https://viewblock.io/thorchain/address/' + address
-            } else if(this.network === NETWORK_CHAOSNET_MUTLI) {
+            } else if (this.network === NETWORK_CHAOSNET_MUTLI) {
                 return 'https://viewblock.io/thorchain/address/' + address
-            } else if(this.network === NETWORK_TESTNET_MULTI) {
+            } else if (this.network === NETWORK_TESTNET_MULTI) {
                 return 'https://main.d3mbd42yfy75lz.amplifyapp.com/#/address/' + address
             } else {
                 return 'https://thorchain.org'
@@ -63,3 +68,14 @@ export default {
 }
 
 </script>
+
+<style>
+.fade-enter-active, .fade-leave-active {
+    transition: opacity .5s;
+}
+
+.fade-enter, .fade-leave-to /* .fade-leave-active до версии 2.1.8 */
+{
+    opacity: 0;
+}
+</style>

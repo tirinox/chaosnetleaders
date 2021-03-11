@@ -16,3 +16,16 @@ export function volumeFormat (x) {
   const truncX = Math.round(x)
   return numberWithCommas(truncX)
 }
+
+export function addCurrency(data, curr) {
+    if (curr === 'rune') {
+        return data + ' ᚱ'
+    } else {
+        return '$ ' + data
+    }
+}
+
+export function prettyDateFromTimestamp(unix_timestamp) {
+    let date = new Date(unix_timestamp * 1000)
+    return date.toUTCString()
+}

@@ -1,4 +1,5 @@
 import logging
+import random
 from dataclasses import dataclass
 from typing import Optional
 
@@ -39,9 +40,9 @@ class TxStorage(ITxDelegate):
             if new_count == 0:  # all tx are already in out DB
                 self.last_page_counter += 1
                 if self.last_page_counter > self.overscan_pages:
-                    # overscan has failed => try jump ahead skipping all local tx
+                    # overscan has failed => try jump to a random location and scan there
                     if not self.jump_down_flag:
-                        jump_location = n_local - scanner.batch_size
+                        jump_location = random.randint(0, self.last_tx_result.total_count)
                         self.logger.warning(f'jumping to {jump_location} offset to discover any new tx')
                         scanner.rewind(jump_location)
                         self.last_page_counter = 0

@@ -38,6 +38,8 @@ class MidgardURLGenV2(MidgardURLGenBase):
 def get_url_gen_by_network_id(network_id) -> MidgardURLGenBase:
     if network_id == NetworkIdents.TESTNET_MULTICHAIN:
         return MidgardURLGenV2(network_id)
+    elif network_id == NetworkIdents.CHAOSNET_MULTICHAIN:
+        return MidgardURLGenV2(network_id)
     elif network_id == NetworkIdents.CHAOSNET_BEP2CHAIN:
         return MidgardURLGenV1(network_id)
     else:

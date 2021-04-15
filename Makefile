@@ -41,4 +41,8 @@ dbcli:
 	@docker-compose -f "${DOCKER_COMPOSE_FILE}" exec db psql "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DB}"
 
 certbot:
-	sudo certbot certonly --webroot -w ./frontend/dist/ -d ${DOMAIN}
+	make stop
+	sudo certbot certonly --standalone -w ./frontend/dist/ -d "${DOMAIN}"
+	rm -rf "letsencrypt/${DOMAIN}/"
+	cp -rL "/etc/letsencrypt/live/${DOMAIN}/" letsencrypt/
+	make start

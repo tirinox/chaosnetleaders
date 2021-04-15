@@ -39,7 +39,7 @@ services:
     volumes:
       - ./backend/media/:/media/
       - ./backend/staticfiles/:/staticfiles/
-      - ./nginx/prod.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/prod-bepswap.conf:/etc/nginx/nginx.conf:ro
       - ./letsencrypt:/etc/letsencrypt
       - ./frontend/dist/:/dist/
     environment:

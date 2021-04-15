@@ -40,6 +40,9 @@ upgrade:
 dbcli:
 	@docker-compose -f "${DOCKER_COMPOSE_FILE}" exec db psql "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DB}"
 
+dbdrop:
+	rm -rf db_data
+
 certbot:
 	make stop
 	sudo certbot certonly --standalone -w ./frontend/dist/ -d "${DOMAIN}"

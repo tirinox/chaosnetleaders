@@ -25,6 +25,7 @@ class ThorTxType:
     TYPE_DONATE = 'donate'
 
     TYPE_REFUND = 'refund'
+    TYPE_SWITCH = 'switch'
 
 
 class ThorTx(Model):
@@ -116,6 +117,11 @@ class ThorTx(Model):
             return usd_price, usd_volume, rune_volume
 
     def fill_volumes(self, pools: Dict[str, ThorPoolModel], usd_per_rune: float):
+        # # fdixme: debug!
+        # print(self.type)
+        # if self.type == ThorTxType.TYPE_SWITCH:
+        #     print('boo!')
+
         if not usd_per_rune:
             return self.increase_fail_count()
 
@@ -130,8 +136,8 @@ class ThorTx(Model):
         if self.asset2 and not self.usd_price2:
             return self.increase_fail_count()
 
-        if self.type in (ThorTxType.TYPE_SWAP, ThorTxType.TYPE_REFUND):
-            # 1. swap, refund: volume = input asset
+        if self.type in (ThorTxType.TYPE_SWAP, ThorTxType.TYPE_REFUND, ThorTxType.TYPE_SWITCH):
+            # 1. swap, refund, switch: volume = input asset
             self.rune_volume = rune_volume1
             self.usd_volume = usd_volume1
         else:

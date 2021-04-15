@@ -18,6 +18,8 @@ from jobs.vauefill import ValueFiller, get_thor_env_by_network_id
 
 logging.basicConfig(level=logging.INFO)
 
+FILL_JOB_ENABLED = True  # todo: must be True
+
 
 class App:
     def __init__(self) -> None:
@@ -77,7 +79,8 @@ class App:
             await self.value_filler.run_concurrent_jobs()
 
     async def run_fill_job(self, _):
-        asyncio.create_task(self.fill_job())
+        if FILL_JOB_ENABLED:
+            asyncio.create_task(self.fill_job())
 
     def run_server(self):
         app = web.Application(middlewares=[])

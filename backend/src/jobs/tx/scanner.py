@@ -27,7 +27,7 @@ class MidgardURLGenV1(MidgardURLGenBase):
         return f'https://chaosnet-midgard.bepswap.com/v1/txs?offset={offset}&limit={count}'
 
 
-class MidgardURLGenV2(MidgardURLGenBase):
+class MidgardURLGenV2_Test(MidgardURLGenBase):
     def __init__(self, network_id=NetworkIdents.TESTNET_MULTICHAIN):
         super().__init__(network_id)
 
@@ -35,11 +35,19 @@ class MidgardURLGenV2(MidgardURLGenBase):
         return f'https://testnet.midgard.thorchain.info/v2/actions?offset={offset}&limit={count}'
 
 
+class MidgardURLGenV2_Chaos(MidgardURLGenBase):
+    def __init__(self, network_id=NetworkIdents.CHAOSNET_MULTICHAIN):
+        super().__init__(network_id)
+
+    def url_for_tx(self, offset=0, count=50) -> str:
+        return f'https://midgard.thorchain.info/v2/actions?offset={offset}&limit={count}'
+
+
 def get_url_gen_by_network_id(network_id) -> MidgardURLGenBase:
     if network_id == NetworkIdents.TESTNET_MULTICHAIN:
-        return MidgardURLGenV2(network_id)
+        return MidgardURLGenV2_Test(network_id)
     elif network_id == NetworkIdents.CHAOSNET_MULTICHAIN:
-        return MidgardURLGenV2(network_id)
+        return MidgardURLGenV2_Chaos(network_id)
     elif network_id == NetworkIdents.CHAOSNET_BEP2CHAIN:
         return MidgardURLGenV1(network_id)
     else:

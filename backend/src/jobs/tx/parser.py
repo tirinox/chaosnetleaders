@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import typing
 from abc import ABCMeta, abstractmethod
@@ -219,6 +220,8 @@ class TxParserV2(TxParserBase):
             tx_hash = r.get('in', [{}])[0].get('txID', '')
             dbg_hashes.add(tx_hash)
 
+            height = int(r.get('height', 0))
+
             if tx_type == ThorTxType.TYPE_SWAP:
                 asset1, amount1 = in_tx_list[0].first_asset, in_tx_list[0].first_amount
                 asset2, amount2 = out_tx_list[0].first_asset, out_tx_list[0].first_amount
@@ -244,12 +247,21 @@ class TxParserV2(TxParserBase):
                 if tx_type == ThorTxType.TYPE_ADD_LIQUIDITY:
                     liq_units = int(metadata.get('addLiquidity', {}).get('liquidityUnits', 0)) * THOR_DIVIDER_INV
             elif tx_type == ThorTxType.TYPE_WITHDRAW:
-                out_compound = SubTx.join_coins(out_tx_list)
-                not_rune_coin = out_compound.none_rune_coins[0]
                 asset1 = pools[0]
-                amount1 = not_rune_coin.amount
+                out_compound = SubTx.join_coins(out_tx_list)
+                if out_compound.none_rune_coins:
+                    not_rune_coin = out_compound.none_rune_coins[0]
+                    amount1 = not_rune_coin.amount
+                else:
+                    logger.warning(f'strange withdraw without non-rune asset: {r}')
+
                 asset2 = None
-                amount2 = out_compound.rune_coin.amount
+                rune_out = out_compound.rune_coin
+                if rune_out:
+                    amount2 = rune_out.amount
+                else:
+                    logger.warning(f'strange withdraw without rune asset: {r}')
+
                 liq_units = int(metadata.get('withdraw', {}).get('liquidityUnits', 0)) * THOR_DIVIDER_INV
             elif tx_type == ThorTxType.TYPE_REFUND:
                 if in_tx_list:
@@ -258,12 +270,19 @@ class TxParserV2(TxParserBase):
                 if out_tx_list:
                     asset2 = out_tx_list[0].first_asset
                     amount2 = out_tx_list[0].first_amount
+            elif tx_type == ThorTxType.TYPE_SWITCH:
+                amount1 = in_tx_list[0].first_amount
+                amount2 = out_tx_list[0].first_amount
+                # upgrade has no tx_id?
+                if not tx_hash:
+                    hash_feed = f"{height}:{amount1}:{user_address}"
+                    tx_hash = hashlib.sha1(hash_feed.encode()).hexdigest()
             else:
                 logger.warning(f'unknown tx type: {tx_type}')
                 continue
 
             txs.append(ThorTx(
-                block_height=int(r.get('height', 0)),
+                block_height=height,
                 hash=tx_hash,
                 type=tx_type,
                 date=date,

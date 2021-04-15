@@ -2,14 +2,12 @@ import asyncio
 import datetime
 import logging
 import time
-from copy import copy
 from dataclasses import dataclass
 from typing import List
 
 import names
-import tqdm
-from aiothornode.connector import ThorConnector, ThorEnvironment, TEST_NET_ENVIRONMENT_MULTI_1, \
-    CHAOS_NET_BNB_ENVIRONMENT
+from aiothornode.connector import ThorConnector, ThorEnvironment
+from aiothornode.env import TEST_NET_ENVIRONMENT_MULTI_1, CHAOS_NET_BNB_ENVIRONMENT, MULTICHAIN_CHAOSNET_ENVIRONMENT
 from tenacity import retry, stop_after_attempt, RetryError
 
 from helpers.coingecko import CoinGeckoPriceProvider
@@ -22,9 +20,11 @@ from models.tx import ThorTx
 
 def get_thor_env_by_network_id(network_id) -> ThorEnvironment:
     if network_id == NetworkIdents.TESTNET_MULTICHAIN:
-        return copy(TEST_NET_ENVIRONMENT_MULTI_1)
+        return TEST_NET_ENVIRONMENT_MULTI_1.copy()
     elif network_id == NetworkIdents.CHAOSNET_BEP2CHAIN:
-        return copy(CHAOS_NET_BNB_ENVIRONMENT)
+        return CHAOS_NET_BNB_ENVIRONMENT.copy()
+    elif network_id == NetworkIdents.CHAOSNET_MULTICHAIN:
+        return MULTICHAIN_CHAOSNET_ENVIRONMENT.copy()
     else:
         # todo: add multi-chain chaosnet
         raise KeyError('unsupported network ID!')
@@ -162,4 +162,3 @@ class ValueFiller:
         n_done = total - n_to_go
         percent = 100 * n_done / total
         return n_done, total, percent
-

@@ -51,7 +51,7 @@ export default {
             } else if (this.network === NETWORK_CHAOSNET_MUTLI) {
                 return 'https://viewblock.io/thorchain/address/' + address
             } else if (this.network === NETWORK_TESTNET_MULTI) {
-                return 'https://main.d3mbd42yfy75lz.amplifyapp.com/#/address/' + address
+                return 'https://thorchain.net/#/address/' + address
             } else {
                 return 'https://thorchain.org'
             }

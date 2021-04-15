@@ -46,6 +46,6 @@ dbdrop:
 certbot:
 	make stop
 	sudo certbot certonly --standalone -w ./frontend/dist/ -d "${DOMAIN}"
-	rm -rf "letsencrypt/${DOMAIN}/"
-	cp -rL "/etc/letsencrypt/live/${DOMAIN}/" letsencrypt/
+	sudo rm -rf "letsencrypt/${DOMAIN}/"
+	sudo cp -rL "/etc/letsencrypt/live/${DOMAIN}/" letsencrypt/
 	make start

@@ -1,7 +1,7 @@
 <template lang="html">
     <div>
         <b-navbar toggleable="md" type="dark" variant="dark" class="mb-5">
-            <b-navbar-brand href="#">
+            <b-navbar-brand to="/">
                 <img src="/img/icons/favicon-32x32.png" class="d-inline-block align-middle nav-logo pr-2" alt="Logo">
                 {{ siteTitle }}
             </b-navbar-brand>
@@ -10,7 +10,6 @@
 
             <b-collapse id="nav-collapse" is-nav>
                 <b-navbar-nav>
-                    <b-nav-item to="/" :active="$route.path === '/'">Leaderboard</b-nav-item>
 
                     <b-nav-item-dropdown :text="statusTitle" right>
                         <b-dropdown-item>
@@ -36,6 +35,11 @@
                         ></b-form-radio-group>
                     </b-nav-form>
 
+                </b-navbar-nav>
+
+                <b-navbar-nav class="ml-auto">
+                    <b-nav-item right href="https://leaderboard.thornode.org/" :active="$route.path === '/'" v-if="isBepSwap">Go to MCCN version</b-nav-item>
+                    <b-nav-item right href="https://leaderboard-bepswap.thornode.org/" :active="$route.path === '/'" v-else>Go to Bepswap version</b-nav-item>
                 </b-navbar-nav>
             </b-collapse>
 
@@ -127,6 +131,10 @@ export default {
             } else {
                 return 'Unknown network!'
             }
+        },
+
+        isBepSwap() {
+            return getNetworkId() === NETWORK_CHAOSNET_BEP2
         },
 
         statusTitle() {

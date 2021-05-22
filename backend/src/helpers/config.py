@@ -37,7 +37,7 @@ class SubConfig:
         return str(self.get(path, default))
 
     def as_list(self, path: str = None, default=None):
-        return list(self.get(path, default))
+        return list(self.get(path, default)._root_config)
 
     def __int__(self):
         return int(self._root_config)

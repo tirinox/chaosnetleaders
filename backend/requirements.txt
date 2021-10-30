@@ -4,7 +4,6 @@ aiothornode==0.0.21
 async-timeout==3.0.1
 asyncpg==0.24.0
 attrs==21.2.0
-chardet==4.0.0
 idna==3.3
 iniconfig==1.1.1
 iso8601==0.1.16

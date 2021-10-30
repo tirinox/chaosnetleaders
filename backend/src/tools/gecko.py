@@ -15,7 +15,7 @@ from helpers.constants import NetworkIdents
 from helpers.datetime import MINUTE
 from helpers.db import DB
 from jobs.tx.parser import get_parser_by_network_id
-from jobs.vauefill import get_thor_env_by_network_id, ValueFiller
+from jobs.value_filler import get_thor_env_by_network_id, ValueFiller
 from models.poolcache import ThorPoolModel
 from models.tx import ThorTx
 

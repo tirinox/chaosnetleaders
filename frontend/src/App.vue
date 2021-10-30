@@ -36,11 +36,6 @@
                     </b-nav-form>
 
                 </b-navbar-nav>
-
-                <b-navbar-nav class="ml-auto">
-                    <b-nav-item right href="https://leaderboard.thornode.org/" :active="$route.path === '/'" v-if="isBepSwap">Go to MCCN version</b-nav-item>
-                    <b-nav-item right href="https://leaderboard-bepswap.thornode.org/" :active="$route.path === '/'" v-else>Go to Bepswap version</b-nav-item>
-                </b-navbar-nav>
             </b-collapse>
 
         </b-navbar>

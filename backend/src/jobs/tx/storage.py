@@ -60,3 +60,21 @@ class TxStorage(ITxDelegate):
         n_remote = self.last_tx_result.total_count
         percent = 100 * n_local / n_remote if n_remote else 0.0
         return n_local, n_remote, percent
+
+
+@dataclass
+class TxStorageMock(ITxDelegate):
+    full_scan: bool = False
+    logger = logging.getLogger('TxStorageMock')
+
+    async def on_scan_start(self, scanner: TxScanner):
+        ...
+
+    async def on_transactions(self, tx_results: TxParseResult, scanner: TxScanner) -> bool:
+        return True
+
+    async def get_scan_progress(self):
+        n_local = 0
+        n_remote = 1
+        percent = 0
+        return n_local, n_remote, percent

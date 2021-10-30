@@ -41,7 +41,7 @@ class ValueFiller:
     dry_run: bool = False
     concurrent_jobs: int = 4
     _progress_counter: int = 0
-    progress_every_n_iter: int = 50
+    progress_every_n_iter: int = 30
     _last_time: float = 0.0
     sleep_on_error: float = 0.5
 
@@ -87,6 +87,8 @@ class ValueFiller:
             tx.increase_fail_count()
 
         if not self.dry_run:
+            self.logger.info(f'Success fill {tx.type}, Block = {tx.block_height}, '
+                             f'a1 = {tx.amount1:.4f} {tx.asset1}, a2 = {tx.amount2:.4f} {tx.asset2}')
             await tx.save()
 
     @retry(stop=stop_after_attempt(3))

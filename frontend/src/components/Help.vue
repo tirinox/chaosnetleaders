@@ -14,7 +14,7 @@
             <h4>Method</h4>
             <p>
                 All the data is taken from the public
-                <a href="https://midgard.bepswap.com/v1/doc" target="_blank">Midgard interface</a>.
+                <a href="https://midgard.thorchain.info/v2/doc" target="_blank">Midgard interface</a>.
                 <br>
                 Total volume for each address is counted in ᚱ
                 <a href="https://www.coingecko.com/en/coins/thorchain" target="_blank">($RUNE)</a>.

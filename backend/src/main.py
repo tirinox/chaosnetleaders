@@ -13,8 +13,8 @@ from helpers.db import DB
 from helpers.utils import schedule_task_periodically
 from jobs.tx.parser import get_parser_by_network_id
 from jobs.tx.scanner import NetworkIdents, TxScanner, get_url_gen_by_network_id
-from jobs.tx.storage import TxStorage
-from jobs.vauefill import ValueFiller, get_thor_env_by_network_id
+from jobs.tx.storage import TxStorage, TxStorageMock
+from jobs.value_filler import ValueFiller, get_thor_env_by_network_id
 
 logging.basicConfig(level=logging.INFO)
 
@@ -25,7 +25,9 @@ class App:
     def __init__(self) -> None:
         self.cfg = Config()
         self.db = DB()
+
         self.tx_storage = TxStorage()
+        # self.tx_storage = TxStorageMock()
 
         self.network_id = self.cfg.as_str('thorchain.network_id', NetworkIdents.TESTNET_MULTICHAIN)
         logging.info(f'Starting Chaosnetleaders backend for network {self.network_id!r}')
@@ -42,7 +44,9 @@ class App:
         url_gen = get_url_gen_by_network_id(self.network_id)
         parser = get_parser_by_network_id(self.network_id)
         midgard_time_out = self.cfg.as_float('thorchain.midgard.timeout', 7.1)
+
         timeout = ClientTimeout(total=midgard_time_out)
+        logging.info(f'Scanner timeout is set: {timeout}')
 
         async with aiohttp.ClientSession(timeout=timeout) as session:
             self.scanner = TxScanner(url_gen, session, parser, delegate=self.tx_storage,
@@ -67,6 +71,8 @@ class App:
         timeout = ClientTimeout(total=thor_time_out)
         retires = cfg.as_int('value_filler.retries', 3)
         concurrent_jobs = cfg.as_int('value_filler.concurrent_jobs', 8)
+
+        logging.info(f'Fill timeout is set: {timeout}')
 
         async with aiohttp.ClientSession(timeout=timeout) as session:
             thor_env = get_thor_env_by_network_id(self.network_id)
@@ -96,9 +102,19 @@ class App:
             app.add_routes([web.get(route, handler)])
 
         # run bg tasks
+        cfg = self.cfg.get('thorchain')
+
         app.on_startup.append(self.init_db)
-        app.on_startup.append(self.run_scanner)
-        app.on_startup.append(self.run_fill_job)
+
+        if bool(cfg.get('scanner.tx.enabled', True)):
+            app.on_startup.append(self.run_scanner)
+        else:
+            logging.info('Scanner is disabled by Config')
+
+        if bool(cfg.get('value_filler.enabled', True)):
+            app.on_startup.append(self.run_fill_job)
+        else:
+            logging.info('Value filler is disabled by Config')
 
         api_port = int(self.cfg.get('api.port', 5000))
         web.run_app(app, port=api_port)

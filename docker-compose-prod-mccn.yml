@@ -43,4 +43,4 @@ services:
       - "./letsencrypt:/etc/letsencrypt:ro"
       - ./frontend/dist/:/dist/
     environment:
-      CERTBOT_EMAIL: tirinox@tirinox.ru
+      CERTBOT_EMAIL: developer@tirinox.ru
